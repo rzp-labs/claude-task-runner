@@ -133,29 +133,34 @@ def stream_claude_output(
         
         # Open result file for writing
         with open(result_file, 'w') as result_output, open(error_file, 'w') as error_output:
-            # Create a temporary file to store the Claude command
-            # This approach avoids issues with quoting and special characters
-            with tempfile.NamedTemporaryFile(mode='w', suffix='.sh', delete=False) as cmd_file:
-                # Write the command to the file
-                cmd_file_path = cmd_file.name
-                
-                # Build the basic command with output format
-                cmd_file.write("#!/bin/bash\n")
-                cmd_file.write(f"{claude_path} --print --verbose --output-format stream-json ")
-                
-                # Add any additional command arguments
-                if cmd_args:
-                    cmd_file.write(f"{' '.join(cmd_args)} ")
-                
-                # Add input redirection from the task file
-                cmd_file.write(f"< {task_file}")
+            # Create a more persistent temporary file for the command
+            # We'll handle cleanup in a way that ensures the file exists while needed
+            temp_dir = tempfile.gettempdir()
+            cmd_file_path = os.path.join(temp_dir, f"claude_cmd_{int(time.time())}.sh")
+            
+            try:
+                # Write the command directly to the file
+                with open(cmd_file_path, 'w') as cmd_file:
+                    # Build the basic command with output format
+                    cmd_file.write("#!/bin/bash\n")
+                    cmd_file.write(f"{claude_path} --print --verbose --output-format stream-json ")
+                    
+                    # Add any additional command arguments
+                    if cmd_args:
+                        cmd_file.write(f"{' '.join(cmd_args)} ")
+                    
+                    # Add input redirection from the task file
+                    cmd_file.write(f"< {task_file}")
                 
                 # Make the command file executable
                 os.chmod(cmd_file_path, 0o755)
-            
-            logger.info(f"Created command file at {cmd_file_path}")
-            
-            try:
+                
+                logger.info(f"Created command file at {cmd_file_path}")
+                
+                # Verify the file exists before executing
+                if not os.path.exists(cmd_file_path):
+                    raise FileNotFoundError(f"Command file not found at {cmd_file_path}")
+                
                 # Spawn the process using the command file
                 logger.info(f"Executing command via {cmd_file_path}")
                 child = pexpect.spawn(
@@ -165,12 +170,18 @@ def stream_claude_output(
                     # Ensure window size is large enough for Claude's output
                     dimensions=(80, 200)
                 )
-            finally:
-                # Clean up the command file when done
+                
+                # IMPORTANT: We'll clean up the file later, after the command starts running
+                
+            except Exception as e:
+                # If anything fails during setup, clean up the file
+                logger.error(f"Error preparing command: {e}")
                 try:
-                    os.unlink(cmd_file_path)
-                except Exception as e:
-                    logger.warning(f"Failed to remove temporary command file: {e}")
+                    if os.path.exists(cmd_file_path):
+                        os.unlink(cmd_file_path)
+                except Exception as cleanup_error:
+                    logger.warning(f"Failed to clean up command file: {cleanup_error}")
+                raise
             
             # Enable echoing to see output in real-time in our terminal
             child.logfile_read = sys.stdout
@@ -307,6 +318,14 @@ def stream_claude_output(
             except:
                 pass
             
+            # Clean up the command file now that the process has completed
+            try:
+                if os.path.exists(cmd_file_path):
+                    os.unlink(cmd_file_path)
+                    logger.info(f"Removed temporary command file: {cmd_file_path}")
+            except Exception as cleanup_error:
+                logger.warning(f"Failed to clean up command file: {cleanup_error}")
+            
             execution_time = time.time() - start_time
             
             # Log completion
@@ -380,13 +399,26 @@ def clear_claude_context(claude_path: Optional[str] = None) -> bool:
     logger.info("Clearing Claude context...")
     
     try:
-        # Create a temporary file with the /clear command
-        with tempfile.NamedTemporaryFile(mode='w', suffix='.sh', delete=False) as cmd_file:
-            cmd_file_path = cmd_file.name
+        # Create a more persistent temporary file for the command
+        temp_dir = tempfile.gettempdir()
+        cmd_file_path = os.path.join(temp_dir, f"claude_clear_{int(time.time())}.sh")
+        
+        # Write the command to the file
+        with open(cmd_file_path, 'w') as cmd_file:
             cmd_file.write("#!/bin/bash\n")
             cmd_file.write(f"echo '/clear' | {claude_path}")
-            os.chmod(cmd_file_path, 0o755)
         
+        # Make the file executable
+        os.chmod(cmd_file_path, 0o755)
+        
+        # Verify the file exists
+        if not os.path.exists(cmd_file_path):
+            logger.error(f"Clear command file not found at {cmd_file_path}")
+            return False
+            
+        logger.info(f"Created clear command file at {cmd_file_path}")
+        
+        success = False
         try:
             # Use pexpect to run the command
             child = pexpect.spawn(cmd_file_path, encoding='utf-8', timeout=10)
@@ -402,16 +434,18 @@ def clear_claude_context(claude_path: Optional[str] = None) -> bool:
             
             if success:
                 logger.info("Claude context cleared successfully")
-                return True
             else:
                 logger.warning("Context clearing failed - no confirmation received")
-                return False
         finally:
-            # Clean up the temporary file
+            # Clean up the temporary file after execution
             try:
-                os.unlink(cmd_file_path)
-            except Exception as e:
-                logger.warning(f"Failed to remove temporary clear command file: {e}")
+                if os.path.exists(cmd_file_path):
+                    os.unlink(cmd_file_path)
+                    logger.info(f"Removed temporary clear command file: {cmd_file_path}")
+            except Exception as cleanup_error:
+                logger.warning(f"Failed to clean up clear command file: {cleanup_error}")
+                
+        return success
     except Exception as e:
         logger.error(f"Error clearing context: {e}")
         return False
