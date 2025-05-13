@@ -71,7 +71,20 @@ def run(
         300, "--timeout", help="Timeout in seconds for each task (default: 300s)"
     ),
     quick_demo: bool = typer.Option(
-        False, "--quick-demo", help="Run a quick demo with reduced timeouts"
+        False, "--quick-demo", help="Run a quick demo with simulated responses"
+    ),
+    # Removed no_auth flag as it's not supported in the current Claude version
+    debug_claude: bool = typer.Option(
+        False, "--debug-claude", help="Debug Claude launch performance with detailed timing logs"
+    ),
+    no_pool: bool = typer.Option(
+        False, "--no-pool", help="Disable Claude process pooling (creates new process for each task)"
+    ),
+    pool_size: int = typer.Option(
+        3, "--pool-size", help="Maximum number of Claude processes to keep in the pool"
+    ),
+    reuse_context: bool = typer.Option(
+        True, "--reuse-context", help="Reuse Claude processes with /clear command between tasks"
     ),
 ):
     """
@@ -89,6 +102,23 @@ def run(
     # Override Claude path if provided
     if claude_path:
         manager.claude_path = Path(claude_path)
+        
+    # Set debug flag if provided
+    if debug_claude:
+        manager.debug_claude_launch = True
+        logger.info("Debug mode enabled - detailed timing logs will be generated")
+        
+    # Set process pooling settings
+    manager.use_process_pool = not no_pool
+    TaskManager._max_pool_size = pool_size
+    manager.reuse_context = reuse_context
+    # Fast mode is no longer available with --no-auth-check removed
+    
+    # Log the process pooling configuration
+    if not no_pool:
+        logger.info(f"Using process pool with size {pool_size}, context reuse: {reuse_context}")
+    else:
+        logger.info("Process pooling disabled")
     
     try:
         # Parse task list if provided
@@ -141,9 +171,9 @@ def run(
                     console.print(component)
                 
                 # Run the task
-                # Use quick timeout for demo mode
+                # Use appropriate configuration based on options
                 task_timeout = 30 if quick_demo else timeout
-                success, _ = manager.run_task(task_file, task_timeout)
+                success, _ = manager.run_task(task_file, task_timeout, fast_mode=False, demo_mode=quick_demo)
                 
                 # Show updated status after task completes
                 print("\n\n")
@@ -321,8 +351,8 @@ if __name__ == "__main__":
     logger.remove()  # Remove default handler
     logger.add(
         sys.stderr,
-        format="<level>{level}: {message}</level>",
-        level="WARNING",
+        format="<level>{time:YYYY-MM-DD HH:mm:ss.SSS} | {level: <8} | {function}:{line} - {message}</level>",
+        level="INFO",  # Show INFO level logs to diagnose performance issues
         colorize=True
     )
     

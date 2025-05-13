@@ -32,6 +32,10 @@ archive/
 examples
 logs
 scripts
+archive
+debug_project
+screenshots
+
 
 # Distribution / packaging
 .Python

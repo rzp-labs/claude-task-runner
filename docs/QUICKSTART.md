@@ -63,6 +63,38 @@ This will:
 
 **Note:** If you want to stop the task execution early, you can press Ctrl+C at any time. The system will clean up any running processes.
 
+### Single Command Execution
+
+For a simplified proof of concept demonstration, you can use a single command that:
+1. Takes a task list as input
+2. Breaks it into individual task files 
+3. Executes them sequentially with process pooling for better performance
+
+```bash
+python -m task_runner run input/sample_tasks.md --base-dir ./my_project --reuse-context --pool-size 2
+```
+
+For even faster demonstrations, add the `--quick-demo` flag:
+
+```bash
+python -m task_runner run input/sample_tasks.md --base-dir ./my_project --quick-demo
+```
+
+### Performance Optimization Options
+
+Claude Task Runner includes several options to improve performance:
+
+* `--reuse-context`: Reuses Claude processes with context clearing between tasks (default: true)
+* `--pool-size <n>`: Sets the maximum number of Claude processes to keep in the pool (default: 3)
+* `--no-pool`: Disables process pooling, creating a new process for each task
+* `--debug-claude`: Enables detailed timing logs to diagnose performance bottlenecks
+
+Example with all performance options:
+
+```bash
+python -m task_runner run input/sample_tasks.md --base-dir ./my_project --reuse-context --pool-size 2 --debug-claude
+```
+
 ## Step by Step Usage
 
 ### 1. Create a Task List
@@ -193,3 +225,5 @@ python -m task_runner run --json
 - **Layout doesn't render properly**: Some terminals may not display Rich layouts correctly. Use the `--json` flag for a more reliable output
 - **Task execution times out**: Claude may take longer than expected to process complex tasks. You can modify the timeout in the code if needed
 - **Processes remain after interruption**: Run `python -m task_runner clean --base-dir ./my_project` to clean up any remaining processes
+- **Slow performance**: Enable process pooling and context reuse with `--reuse-context --pool-size 2` options
+- **Performance issues persist**: Use `--debug-claude` to generate detailed timing logs to identify bottlenecks

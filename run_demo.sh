@@ -21,9 +21,9 @@ python -m task_runner create sample_project input/sample_tasks.md --base-dir ./
 echo "Initial task status:"
 python -m task_runner status --base-dir ./sample_project --json | python -m json.tool
 
-# Run all tasks (will execute each task with Claude)
-echo "Running all tasks (press Ctrl+C to stop)..."
-python -m task_runner run --base-dir ./sample_project
+# Run all tasks with quick-demo mode (using simulated responses instead of actual Claude)
+echo "Running all tasks in quick demo mode..."
+python -m task_runner run --base-dir ./sample_project --quick-demo
 
 # Show final status after tasks complete
 echo "Final task status:"
