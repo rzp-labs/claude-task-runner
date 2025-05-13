@@ -3,8 +3,8 @@
 Claude Streamer Module for Task Runner
 
 This module provides functions for running Claude with real-time output streaming,
-enabling visibility into Claude's progress during task execution. It uses Claude's
-native streaming capabilities for reliable output display.
+enabling visibility into Claude's progress during task execution. It uses pexpect
+for reliable interactive terminal management and streaming of Claude's output.
 
 Sample Input:
 - Task file path: "/path/to/task.md"
@@ -29,8 +29,8 @@ Sample Output:
 
 Links:
 - Claude CLI: https://github.com/anthropics/anthropic-cli
+- Pexpect Documentation: https://pexpect.readthedocs.io/
 - Loguru Documentation: https://loguru.readthedocs.io/
-- Python subprocess: https://docs.python.org/3/library/subprocess.html
 """
 
 import sys
@@ -38,10 +38,11 @@ import time
 import subprocess
 import os
 import tempfile
-import json
+import signal
 from pathlib import Path
 from typing import Dict, List, Any, Optional, TextIO
 
+import pexpect
 from loguru import logger
 
 
@@ -78,7 +79,7 @@ def stream_claude_output(
     timeout_seconds: int = 300
 ) -> Dict[str, Any]:
     """
-    Run Claude on a task file and stream its output in real-time.
+    Run Claude on a task file and stream its output in real-time using pexpect.
     
     Args:
         task_file: Path to the task file
@@ -115,105 +116,115 @@ def stream_claude_output(
     if cmd_args is None:
         cmd_args = []
     
-    cmd_args = ["--print"] + cmd_args
+    cmd_args = ["--print", "--verbose"] + cmd_args
     
     logger.info(f"Task file: {task_file}")
     logger.info(f"Result will be saved to: {result_file}")
     
-    # Start the process - using direct subprocess approach instead of named pipes
+    # Start the process with pexpect
     start_time = time.time()
     
     try:
-        # Build command with direct input/output
+        # Build Claude command
         cmd = [claude_path] + cmd_args
-        logger.info(f"Running command: {' '.join(cmd)}")
+        cmd_str = ' '.join(cmd)
+        logger.info(f"Running command: {cmd_str}")
         
-        # Open files for reading/writing
-        with open(task_file, 'r') as input_file, \
-             open(result_file, 'w') as result_output, \
-             open(error_file, 'w') as error_output:
-            
-            # Start Claude process with piped stdout to capture output directly
-            process = subprocess.Popen(
-                cmd,
-                stdin=input_file,
-                stdout=subprocess.PIPE,
-                stderr=error_output,
-                text=True,
-                bufsize=1  # Line buffered mode
+        # Read task file content
+        with open(task_file, 'r') as f:
+            task_content = f.read()
+        
+        # Open result file for writing
+        with open(result_file, 'w') as result_output, open(error_file, 'w') as error_output:
+            # Start Claude process with pexpect
+            # Use stdin=os.devnull to ensure we control input via pexpect
+            child = pexpect.spawn(
+                cmd_str,
+                encoding='utf-8',
+                timeout=timeout_seconds,
+                # Ensure window size is large enough for Claude's output
+                dimensions=(80, 200)
             )
             
-            logger.info("Starting to stream Claude's output...")
-            last_output_time = time.time()
+            # Enable echoing to see output in real-time in our terminal
+            child.logfile_read = sys.stdout
             
-            # Read from process stdout in real-time
+            # Make sure we're capturing all output
+            child.logfile = result_output
+            child.logfile_send = error_output
+            
+            # Send task content to Claude
+            child.sendline(task_content)
+            
+            # If we need to close stdin to signal end of input
+            child.sendcontrol('d')
+            
+            # Set up timeout monitoring
+            elapsed = 0
+            last_output_time = time.time()
+            logger.info("Started streaming Claude's output...")
+            
+            # Initialize variables to track outcome
+            timed_out = False
+            exit_code = 0
+            
+            # Keep checking for output until process completes
             while True:
-                # Check if process is still running or if we're done reading output
-                if process.poll() is not None and not process.stdout.readable():
-                    logger.info(f"Claude process completed with exit code {process.returncode}")
-                    break
-                
-                # Check for timeout
-                elapsed = time.time() - start_time
-                if elapsed > timeout_seconds:
-                    logger.warning(f"Claude process timed out after {timeout_seconds}s")
-                    try:
-                        process.terminate()
-                        logger.info(f"Terminated Claude process")
-                    except:
-                        pass
+                try:
+                    # Wait for any output with a 1-second timeout (allows interruption check)
+                    patterns = [pexpect.TIMEOUT, pexpect.EOF]
+                    index = child.expect(patterns, timeout=1)
+                    
+                    if index == 0:  # TIMEOUT - No output in the last 1 second
+                        # Check if we've exceeded the total timeout
+                        elapsed = time.time() - start_time
+                        if elapsed > timeout_seconds:
+                            logger.warning(f"Claude process timed out after {timeout_seconds}s")
+                            timed_out = True
+                            exit_code = -1
+                            
+                            # Add timeout message to result file
+                            result_output.write(f"\n\n[TIMEOUT: Claude process was terminated after {timeout_seconds}s]")
+                            result_output.flush()
+                            
+                            # Kill the process
+                            child.kill(signal.SIGTERM)
+                            break
                         
-                    # Add timeout notice to result file
-                    result_output.write(f"\n\n[TIMEOUT: Claude process was terminated after {timeout_seconds}s]")
-                    result_output.flush()
-                    return {
-                        "task_file": task_file,
-                        "result_file": result_file,
-                        "error_file": error_file,
-                        "exit_code": -1,  # Use -1 for timeout
-                        "execution_time": elapsed,
-                        "success": False,
-                        "status": "timeout",
-                        "result_size": result_path.stat().st_size if result_path.exists() else 0
-                    }
-                
-                # Read a line (non-blocking)
-                line = process.stdout.readline()
-                
-                if line:
-                    # Got output, write to result file
-                    result_output.write(line)
-                    result_output.flush()
-                    
-                    # Display to console (with truncation for very long lines)
-                    display_line = line.strip()
-                    if display_line:
-                        if len(display_line) > 100:
-                            display_line = display_line[:100] + "..."
-                        logger.info(f"Claude: {display_line}")
-                    
-                    last_output_time = time.time()
-                else:
-                    # No output available right now
-                    
-                    # Check if process has ended
-                    if process.poll() is not None:
+                        # Check if we should log silent period
+                        if time.time() - last_output_time > 10:
+                            logger.info(f"Claude has been silent for {int(time.time() - last_output_time)}s")
+                            last_output_time = time.time()  # Reset to avoid spamming
+                        
+                    elif index == 1:  # EOF - Process completed
+                        logger.info("Claude process completed")
                         break
                     
-                    # Check if we've been silent for too long (but not timed out yet)
-                    if time.time() - last_output_time > 10:
-                        logger.info(f"Claude has been silent for {int(time.time() - last_output_time)}s")
-                        last_output_time = time.time()  # Reset to avoid spamming
-                    
-                    # Small pause before trying again
-                    time.sleep(0.1)
+                except KeyboardInterrupt:
+                    logger.warning("Process interrupted by user")
+                    child.kill(signal.SIGTERM)
+                    exit_code = 130  # Standard exit code for SIGINT
+                    break
+                except Exception as e:
+                    logger.error(f"Error during pexpect monitoring: {e}")
+                    # Try to kill the process
+                    try:
+                        child.kill(signal.SIGTERM)
+                    except:
+                        pass
+                    exit_code = 1
+                    break
             
-            # Process completed - make sure we get the exit code
-            if process.poll() is None:
-                process.wait()
+            # Wait for process to fully terminate
+            try:
+                child.close()
+                # Get the exit code if available
+                if not timed_out and child.exitstatus is not None:
+                    exit_code = child.exitstatus
+            except:
+                pass
             
             execution_time = time.time() - start_time
-            exit_code = process.returncode
             
             # Log completion
             if exit_code == 0:
@@ -227,19 +238,19 @@ def stream_claude_output(
                 logger.error(f"Claude process failed with exit code {exit_code}")
                 
                 # Check for specific error conditions
-                error_content = ""
                 if result_path.exists() and result_path.stat().st_size > 0:
                     with open(result_file, "r") as f:
                         result_content = f.read(500)
                         if "usage limit reached" in result_content.lower():
                             logger.error("CLAUDE USAGE LIMIT REACHED - Your account has reached its quota")
-                            logger.error("Consider waiting until your quota resets or upgrading your Claude plan")
                 
                 # Show error output
                 if error_path.exists() and error_path.stat().st_size > 0:
                     with open(error_file, "r") as f:
                         error_content = f.read(500)
                         logger.error(f"Error output: {error_content}")
+            
+            status = "timeout" if timed_out else ("completed" if exit_code == 0 else "failed")
             
             return {
                 "task_file": task_file,
@@ -248,20 +259,12 @@ def stream_claude_output(
                 "exit_code": exit_code,
                 "execution_time": execution_time,
                 "success": exit_code == 0,
-                "status": "completed" if exit_code == 0 else "failed",
+                "status": status,
                 "result_size": result_path.stat().st_size if result_path.exists() else 0
             }
         
     except Exception as e:
         logger.exception(f"Error streaming Claude output: {e}")
-        
-        # Check if process is still running and terminate if needed
-        if 'process' in locals() and process.poll() is None:
-            process.terminate()
-            try:
-                process.wait(timeout=5)
-            except subprocess.TimeoutExpired:
-                process.kill()
         
         execution_time = time.time() - start_time if 'start_time' in locals() else 0
         
@@ -271,7 +274,7 @@ def stream_claude_output(
             "error_file": error_file,
             "success": False,
             "error": str(e),
-            "exit_code": -1 if 'process' not in locals() else (process.returncode or -1),
+            "exit_code": -1,
             "execution_time": execution_time,
             "status": "error",
             "result_size": result_path.stat().st_size if result_path.exists() else 0
@@ -293,24 +296,25 @@ def clear_claude_context(claude_path: Optional[str] = None) -> bool:
     
     logger.info("Clearing Claude context...")
     
-    # Use echo to pipe /clear to Claude
-    cmd = f"echo '/clear' | {claude_path}"
-    
     try:
-        process = subprocess.run(
-            cmd,
-            shell=True,
-            check=True,
-            stdout=subprocess.PIPE,
-            stderr=subprocess.PIPE,
-            timeout=10
-        )
+        # Use pexpect to send the /clear command
+        child = pexpect.spawn(claude_path, encoding='utf-8', timeout=10)
+        child.sendline("/clear")
         
-        if process.returncode == 0:
+        # Look for confirmation message or prompt
+        patterns = [pexpect.TIMEOUT, pexpect.EOF, "Context cleared"]
+        index = child.expect(patterns, timeout=5)
+        
+        success = index == 2 or index == 1  # Success if we see "Context cleared" or EOF
+        
+        # Close the process
+        child.close(force=True)
+        
+        if success:
             logger.info("Claude context cleared successfully")
             return True
         else:
-            logger.warning(f"Context clearing failed: {process.stderr.decode()}")
+            logger.warning("Context clearing failed - no confirmation received")
             return False
     except Exception as e:
         logger.error(f"Error clearing context: {e}")

@@ -29,72 +29,50 @@ Claude Task Runner implements a "Boomerang" approach:
 The Claude Task Runner uses a clean, modular architecture with real-time streaming output:
 
 ```mermaid
-flowchart TD
-    %% Define nodes with better contrast for light/dark modes - grouped by function
+flowchart TB
+    %% Define node styles
     classDef userNode fill:#f5f5f5,stroke:#333,color:#333,margin:15px
     classDef interfaceNode fill:#FBD38D,stroke:#C05621,color:#000,margin:15px
     classDef coreNode fill:#63B3ED,stroke:#2B6CB0,color:#000,margin:15px
     classDef storageNode fill:#9AE6B4,stroke:#2F855A,color:#000,margin:15px
     classDef externalNode fill:#D6BCFA,stroke:#6B46C1,color:#000,margin:15px
-    classDef containerNode fill:transparent,stroke:#666,color:#666
-    classDef legendNode fill:transparent,stroke:transparent,color:#666
     classDef dataNode fill:#FFD6A5,stroke:#FF9A3C,color:#000,margin:15px,stroke-dasharray: 5 5
-
-    %% Main components with emojis and extra padding using non-breaking spaces
-    User["👤   User   "]:::userNode
-    TaskListFile["📝   Task List File   "]:::dataNode
     
-    subgraph CLI["🖥️  CLI Layer  "]
-        CLI_Interface["🔌   CLI Interface   "]:::interfaceNode
-        Status_Dashboard["📊   Status Dashboard   "]:::interfaceNode
-    end
+    %% Main user journey flow - simple and clear
+    User["👤 User"]:::userNode
+    TaskList["📝 Task List File"]:::dataNode
+    CLI["🔌 CLI Interface"]:::interfaceNode
+    TaskManager["📋 Task Manager"]:::coreNode
+    TaskFiles["📁 Individual Task Files"]:::storageNode
+    ClaudeStreamer["🔄 Claude Streamer"]:::coreNode
+    ClaudeCode["🤖 Claude Code"]:::externalNode
+    ResultsFiles["📄 Results Files"]:::storageNode
+    Dashboard["📊 Status Dashboard"]:::interfaceNode
     
-    subgraph Core["⚙️  Core Components  "]
-        Task_Manager["📋   Task Manager   "]:::coreNode
-        Claude_Streamer["🔄   Claude Streamer   "]:::coreNode
-    end
+    %% The linear journey
+    User -->|"1. Creates"| TaskList
+    User -->|"2. Runs command"| CLI
+    CLI -->|"3. Initialize project"| TaskManager
+    TaskManager -->|"4. Parse & extract tasks"| TaskList
+    TaskManager -->|"5. Create separate files"| TaskFiles
+    TaskManager -->|"6. Execute each task"| ClaudeStreamer
+    ClaudeStreamer -->|"7. Process with Claude"| ClaudeCode
+    ClaudeCode -->|"8. Generate results"| ClaudeStreamer
+    ClaudeStreamer -->|"9. Save output"| ResultsFiles
+    ClaudeStreamer -->|"10. Report completion"| TaskManager
+    TaskManager -->|"11. Update status"| Dashboard
+    Dashboard -->|"12. Display progress"| User
+    ResultsFiles -->|"13. Available to"| User
     
-    subgraph Storage["💾  Storage Layer  "]
-        Task_Files["📁   Individual Task Files   "]:::storageNode
-        Results_Files["📄   Results Files   "]:::storageNode
-    end
-    
-    subgraph External["🔗  External Components  "]
-        Claude_Code["🤖   Claude Code   "]:::externalNode
-    end
-    
-    %% User journey flow - more detailed, sequential steps
-    User -->|"1. Creates project with task list"| TaskListFile
-    User -->|"2. Runs CLI command"| CLI_Interface
-    CLI_Interface -->|"3. Passes task list"| Task_Manager
-    TaskListFile -->|"Input"| Task_Manager
-    
-    %% Task processing flow
-    Task_Manager -->|"4. Parses & extracts individual tasks"| Task_Files
-    Task_Manager -->|"5. Processes each task sequentially"| Claude_Streamer
-    Task_Files -->|"6. Loads each task"| Claude_Streamer
-    Claude_Streamer -->|"7. Sends to"| Claude_Code
-    Claude_Code -->|"8. Returns output"| Claude_Streamer
-    Claude_Streamer -->|"9. Saves results"| Results_Files
-    
-    %% Status updates
-    Claude_Streamer -->|"10. Sends completion status"| Task_Manager
-    Task_Manager -->|"11. Updates dashboard"| Status_Dashboard
-    Status_Dashboard -->|"12. Displays progress to"| User
-    Results_Files -->|"13. Available for"| User
-    
-    %% Add Legend with extra padding
+    %% Add a simple legend
     subgraph Legend["Legend"]
-        User_Legend["👤   User Interface   "]:::userNode
-        Interface_Legend["🔌   CLI Components   "]:::interfaceNode
-        Core_Legend["⚙️   Core System   "]:::coreNode
-        Storage_Legend["💾   Storage   "]:::storageNode
-        External_Legend["🔗   External Services   "]:::externalNode
-        Data_Legend["📝   Input/Output Data   "]:::dataNode
+        UserLegend["👤 User Interface"]:::userNode
+        InterfaceLegend["🔌 CLI Components"]:::interfaceNode
+        CoreLegend["📋 Core System"]:::coreNode
+        StorageLegend["📁 Storage"]:::storageNode
+        ExternalLegend["🤖 External Services"]:::externalNode
+        DataLegend["📝 Input/Output Data"]:::dataNode
     end
-    
-    %% Apply container styling
-    class CLI,Core,Storage,External,Legend containerNode
 ```
 
 ## Why Use Claude Task Runner?
