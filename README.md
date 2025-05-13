@@ -29,40 +29,36 @@ Claude Task Runner implements a "Boomerang" approach:
 The Claude Task Runner uses a clean, modular architecture with real-time streaming output:
 
 ```mermaid
-flowchart TB
+flowchart TD
     %% Define node styles - clean and simple
-    classDef userNode fill:#f5f5f5,stroke:#333,color:#333,margin:10px
-    classDef interfaceNode fill:#FBD38D,stroke:#C05621,color:#000,margin:10px
-    classDef coreNode fill:#63B3ED,stroke:#2B6CB0,color:#fff,margin:10px
-    classDef storageNode fill:#9AE6B4,stroke:#2F855A,color:#000,margin:10px
-    classDef externalNode fill:#D6BCFA,stroke:#6B46C1,color:#fff,margin:10px
-    classDef dataNode fill:#FFD6A5,stroke:#FF9A3C,color:#000,margin:10px,stroke-dasharray: 5 5
+    classDef userNode fill:#f5f5f5,stroke:#333,color:#333
+    classDef interfaceNode fill:#FBD38D,stroke:#C05621,color:#000
+    classDef coreNode fill:#63B3ED,stroke:#2B6CB0,color:#fff
+    classDef storageNode fill:#9AE6B4,stroke:#2F855A,color:#000
+    classDef externalNode fill:#D6BCFA,stroke:#6B46C1,color:#fff
+    classDef dataNode fill:#FFD6A5,stroke:#FF9A3C,color:#000,stroke-dasharray: 5 5
     
-    %% Main components - no subgraphs for cleaner appearance
+    %% Main components in vertical layout
     User["👤 User"]:::userNode
     TaskList["📝 Task List File"]:::dataNode
-    CLI["🔌 CLI Interface"]:::interfaceNode
-    TaskManager["📋 Task Manager"]:::coreNode
     TaskFiles["📁 Individual Task Files"]:::storageNode
-    ClaudeStreamer["🔄 Claude Streamer"]:::coreNode
+    TaskRunner["📋 Task Runner"]:::coreNode
+    Dashboard["📊 Status Dashboard"]:::interfaceNode
     ClaudeCode["🤖 Claude Code"]:::externalNode
     ResultsFiles["📄 Results Files"]:::storageNode
-    Dashboard["📊 Status Dashboard"]:::interfaceNode
     
-    %% Linear user journey flow
+    %% The actual workflow in 6 steps - vertical layout
     User -->|"1. Creates"| TaskList
-    User -->|"2. Runs command"| CLI
-    CLI -->|"3. Initialize"| TaskManager
-    TaskManager -->|"4. Parse"| TaskList
-    TaskManager -->|"5. Create"| TaskFiles
-    TaskManager -->|"6. Execute"| ClaudeStreamer
-    ClaudeStreamer -->|"7. Process"| ClaudeCode
-    ClaudeCode -->|"8. Generate"| ClaudeStreamer
-    ClaudeStreamer -->|"9. Save"| ResultsFiles
-    ClaudeStreamer -->|"10. Report"| TaskManager
-    TaskManager -->|"11. Update"| Dashboard
-    Dashboard -->|"12. Show"| User
-    ResultsFiles -->|"13. Access"| User
+    TaskList -->|"2. Breaks down into"| TaskFiles
+    TaskFiles -->|"3. Iterates over each"| TaskRunner
+    TaskRunner -->|"4. Updates"| Dashboard
+    TaskRunner -->|"5. Sends task to"| ClaudeCode
+    ClaudeCode -->|"Results & /clear"| ResultsFiles
+    ResultsFiles -->|"6. Completes task & updates dashboard"| TaskRunner
+    
+    %% Loop back for next task
+    TaskRunner -.->|"Repeats for next task"| TaskFiles
+    Dashboard -->|"Shows progress to"| User
 ```
 
 ## Why Use Claude Task Runner?
