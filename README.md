@@ -30,15 +30,15 @@ The Claude Task Runner uses a clean, modular architecture with real-time streami
 
 ```mermaid
 flowchart TB
-    %% Define node styles
-    classDef userNode fill:#f5f5f5,stroke:#333,color:#333,margin:15px
-    classDef interfaceNode fill:#FBD38D,stroke:#C05621,color:#000,margin:15px
-    classDef coreNode fill:#63B3ED,stroke:#2B6CB0,color:#000,margin:15px
-    classDef storageNode fill:#9AE6B4,stroke:#2F855A,color:#000,margin:15px
-    classDef externalNode fill:#D6BCFA,stroke:#6B46C1,color:#000,margin:15px
-    classDef dataNode fill:#FFD6A5,stroke:#FF9A3C,color:#000,margin:15px,stroke-dasharray: 5 5
+    %% Define node styles - clean and simple
+    classDef userNode fill:#f5f5f5,stroke:#333,color:#333,margin:10px
+    classDef interfaceNode fill:#FBD38D,stroke:#C05621,color:#000,margin:10px
+    classDef coreNode fill:#63B3ED,stroke:#2B6CB0,color:#fff,margin:10px
+    classDef storageNode fill:#9AE6B4,stroke:#2F855A,color:#000,margin:10px
+    classDef externalNode fill:#D6BCFA,stroke:#6B46C1,color:#fff,margin:10px
+    classDef dataNode fill:#FFD6A5,stroke:#FF9A3C,color:#000,margin:10px,stroke-dasharray: 5 5
     
-    %% Main user journey flow - simple and clear
+    %% Main components - no subgraphs for cleaner appearance
     User["👤 User"]:::userNode
     TaskList["📝 Task List File"]:::dataNode
     CLI["🔌 CLI Interface"]:::interfaceNode
@@ -49,30 +49,20 @@ flowchart TB
     ResultsFiles["📄 Results Files"]:::storageNode
     Dashboard["📊 Status Dashboard"]:::interfaceNode
     
-    %% The linear journey
+    %% Linear user journey flow
     User -->|"1. Creates"| TaskList
     User -->|"2. Runs command"| CLI
-    CLI -->|"3. Initialize project"| TaskManager
-    TaskManager -->|"4. Parse & extract tasks"| TaskList
-    TaskManager -->|"5. Create separate files"| TaskFiles
-    TaskManager -->|"6. Execute each task"| ClaudeStreamer
-    ClaudeStreamer -->|"7. Process with Claude"| ClaudeCode
-    ClaudeCode -->|"8. Generate results"| ClaudeStreamer
-    ClaudeStreamer -->|"9. Save output"| ResultsFiles
-    ClaudeStreamer -->|"10. Report completion"| TaskManager
-    TaskManager -->|"11. Update status"| Dashboard
-    Dashboard -->|"12. Display progress"| User
-    ResultsFiles -->|"13. Available to"| User
-    
-    %% Add a simple legend
-    subgraph Legend["Legend"]
-        UserLegend["👤 User Interface"]:::userNode
-        InterfaceLegend["🔌 CLI Components"]:::interfaceNode
-        CoreLegend["📋 Core System"]:::coreNode
-        StorageLegend["📁 Storage"]:::storageNode
-        ExternalLegend["🤖 External Services"]:::externalNode
-        DataLegend["📝 Input/Output Data"]:::dataNode
-    end
+    CLI -->|"3. Initialize"| TaskManager
+    TaskManager -->|"4. Parse"| TaskList
+    TaskManager -->|"5. Create"| TaskFiles
+    TaskManager -->|"6. Execute"| ClaudeStreamer
+    ClaudeStreamer -->|"7. Process"| ClaudeCode
+    ClaudeCode -->|"8. Generate"| ClaudeStreamer
+    ClaudeStreamer -->|"9. Save"| ResultsFiles
+    ClaudeStreamer -->|"10. Report"| TaskManager
+    TaskManager -->|"11. Update"| Dashboard
+    Dashboard -->|"12. Show"| User
+    ResultsFiles -->|"13. Access"| User
 ```
 
 ## Why Use Claude Task Runner?

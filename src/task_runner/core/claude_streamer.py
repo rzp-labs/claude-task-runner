@@ -130,16 +130,15 @@ def stream_claude_output(
         cmd_str = ' '.join(cmd)
         logger.info(f"Running command: {cmd_str}")
         
-        # Read task file content
-        with open(task_file, 'r') as f:
-            task_content = f.read()
-        
         # Open result file for writing
         with open(result_file, 'w') as result_output, open(error_file, 'w') as error_output:
-            # Start Claude process with pexpect
-            # Use stdin=os.devnull to ensure we control input via pexpect
+            # Start Claude process with pexpect and directly pass the file
+            modified_cmd = f"{claude_path} --print --verbose {task_file}"
+            logger.info(f"Using direct file input with command: {modified_cmd}")
+            
+            # Spawn process with the task file as direct input
             child = pexpect.spawn(
-                cmd_str,
+                modified_cmd,
                 encoding='utf-8',
                 timeout=timeout_seconds,
                 # Ensure window size is large enough for Claude's output
@@ -152,12 +151,6 @@ def stream_claude_output(
             # Make sure we're capturing all output
             child.logfile = result_output
             child.logfile_send = error_output
-            
-            # Send task content to Claude
-            child.sendline(task_content)
-            
-            # If we need to close stdin to signal end of input
-            child.sendcontrol('d')
             
             # Set up timeout monitoring
             elapsed = 0
