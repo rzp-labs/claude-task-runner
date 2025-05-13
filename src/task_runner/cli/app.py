@@ -5,7 +5,7 @@ Command Line Interface for Task Runner
 This module provides a CLI for the task runner functionality using Typer and Rich,
 allowing users to manage and run isolated Claude tasks.
 
-This module is part of the Presentation Layer and should only depend on
+This module is part of the CLI Layer and should only depend on
 Core Layer components, not on Integration Layer.
 
 Links:
@@ -30,13 +30,20 @@ from loguru import logger
 from rich.console import Console
 
 from task_runner.core.task_manager import TaskManager
-from task_runner.presentation.formatters import (
+from task_runner.cli.formatters import (
     create_dashboard,
     print_error,
     print_info,
     print_success,
     print_warning,
     print_json
+)
+from task_runner.cli.validators import (
+    validate_task_list_file,
+    validate_base_dir,
+    validate_timeout,
+    validate_pool_size,
+    validate_json_output
 )
 
 
@@ -52,11 +59,13 @@ console = Console()
 @app.command()
 def run(
     task_list: Optional[Path] = typer.Argument(
-        None, help="Path to task list file. If not provided, uses existing task files."
+        None, help="Path to task list file. If not provided, uses existing task files.",
+        callback=validate_task_list_file
     ),
     base_dir: Path = typer.Option(
         Path.home() / "claude_task_runner",
         help="Base directory for tasks and results",
+        callback=validate_base_dir
     ),
     claude_path: Optional[str] = typer.Option(
         None, help="Path to Claude executable"
@@ -65,10 +74,12 @@ def run(
         False, "--resume", help="Resume from previously interrupted tasks"
     ),
     json_output: bool = typer.Option(
-        False, "--json", help="Output results as JSON"
+        False, "--json", help="Output results as JSON",
+        callback=validate_json_output
     ),
     timeout: int = typer.Option(
-        300, "--timeout", help="Timeout in seconds for each task (default: 300s)"
+        300, "--timeout", help="Timeout in seconds for each task (default: 300s)",
+        callback=validate_timeout
     ),
     quick_demo: bool = typer.Option(
         False, "--quick-demo", help="Run a quick demo with simulated responses"
@@ -81,10 +92,14 @@ def run(
         False, "--no-pool", help="Disable Claude process pooling (creates new process for each task)"
     ),
     pool_size: int = typer.Option(
-        3, "--pool-size", help="Maximum number of Claude processes to keep in the pool"
+        3, "--pool-size", help="Maximum number of Claude processes to keep in the pool",
+        callback=validate_pool_size
     ),
     reuse_context: bool = typer.Option(
         True, "--reuse-context", help="Reuse Claude processes with /clear command between tasks"
+    ),
+    no_streaming: bool = typer.Option(
+        False, "--no-streaming", help="Disable real-time output streaming (uses simple file redirection)"
     ),
 ):
     """
@@ -137,7 +152,12 @@ def run(
         # Run all tasks
         if json_output:
             # Run and output as JSON
-            results = manager.run_all_tasks()
+            results = manager.run_all_tasks(
+                timeout_seconds=timeout,
+                fast_mode=False,
+                demo_mode=quick_demo,
+                use_streaming=not no_streaming
+            )
             print_json(results)
         else:
             # Run with interactive display
@@ -173,7 +193,7 @@ def run(
                 # Run the task
                 # Use appropriate configuration based on options
                 task_timeout = 30 if quick_demo else timeout
-                success, _ = manager.run_task(task_file, task_timeout, fast_mode=False, demo_mode=quick_demo)
+                success, _ = manager.run_task(task_file, task_timeout, fast_mode=False, demo_mode=quick_demo, use_streaming=not no_streaming)
                 
                 # Show updated status after task completes
                 print("\n\n")
@@ -222,9 +242,11 @@ def status(
     base_dir: Path = typer.Option(
         Path.home() / "claude_task_runner",
         help="Base directory for tasks and results",
+        callback=validate_base_dir
     ),
     json_output: bool = typer.Option(
-        False, "--json", help="Output results as JSON"
+        False, "--json", help="Output results as JSON",
+        callback=validate_json_output
     ),
 ):
     """Show status of all tasks"""
@@ -257,14 +279,17 @@ def status(
 def create(
     project_name: str = typer.Argument(..., help="Name of the project"),
     task_list: Optional[Path] = typer.Argument(
-        None, help="Path to task list file"
+        None, help="Path to task list file",
+        callback=validate_task_list_file
     ),
     base_dir: Path = typer.Option(
         Path.home() / "claude_task_runner",
         help="Base directory for tasks and results",
+        callback=validate_base_dir
     ),
     json_output: bool = typer.Option(
-        False, "--json", help="Output results as JSON"
+        False, "--json", help="Output results as JSON",
+        callback=validate_json_output
     ),
 ):
     """Create a new project from a task list"""
@@ -327,9 +352,11 @@ def clean(
     base_dir: Path = typer.Option(
         Path.home() / "claude_task_runner",
         help="Base directory for tasks and results",
+        callback=validate_base_dir
     ),
     json_output: bool = typer.Option(
-        False, "--json", help="Output results as JSON"
+        False, "--json", help="Output results as JSON",
+        callback=validate_json_output
     ),
 ):
     """Clean up any running processes"""

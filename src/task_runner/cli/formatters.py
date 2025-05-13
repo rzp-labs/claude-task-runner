@@ -6,7 +6,7 @@ This module provides rich formatting utilities for the CLI presentation layer.
 It includes tables, panels, progress indicators, and other UI components
 for a better user experience.
 
-This module is part of the Presentation Layer and should only depend on
+This module is part of the CLI Layer and should only depend on
 Core Layer components, not on Integration Layer.
 
 Links:
@@ -471,6 +471,6 @@ if __name__ == "__main__":
             print(f"  - {failure}")
         sys.exit(1)
     else:
-        print(f" VALIDATION PASSED - All {total_tests} tests produced expected results")
+        print(f" VALIDATION PASSED - All {total_tests} tests produced expected results")
         print("Function is validated and formal tests can now be written")
         sys.exit(0)

@@ -4,8 +4,8 @@ build-backend = "setuptools.build_meta"
 
 [project]
 name = "task_runner"
-version = "0.1.0"
-description = "Boomerang Mode for Claude where claude instances are spawned per task and then killed when complete."
+version = "1.0.0"
+description = "Claude Task Runner - A tool for managing context isolation and focused task execution with Claude"
 authors = [
     {name = "Graham Anderson", email = "graham@grahama.co"}
 ]
@@ -29,6 +29,10 @@ dependencies = [
     "typer>=0.15.3",
     "python-arango>=8.1.6",
 ]
+
+[project.scripts]
+task-runner = "task_runner.cli.app:app"
+task-runner-mcp = "task_runner.mcp.server:app"
 
 [project.optional-dependencies]
 dev = [

@@ -24,6 +24,79 @@ Claude Task Runner implements a "Boomerang" approach:
 - **Project Organization**: Tasks are organized into projects with proper sequencing and metadata.
 - **Execution Management**: Tasks can be run individually or in sequence, with results captured and organized.
 
+## Architecture
+
+The Claude Task Runner uses a clean, modular architecture with real-time streaming output:
+
+```mermaid
+flowchart TD
+    %% Define nodes with better contrast for light/dark modes - grouped by function
+    classDef userNode fill:#f5f5f5,stroke:#333,color:#333,margin:15px
+    classDef interfaceNode fill:#FBD38D,stroke:#C05621,color:#000,margin:15px
+    classDef coreNode fill:#63B3ED,stroke:#2B6CB0,color:#000,margin:15px
+    classDef storageNode fill:#9AE6B4,stroke:#2F855A,color:#000,margin:15px
+    classDef externalNode fill:#D6BCFA,stroke:#6B46C1,color:#000,margin:15px
+    classDef containerNode fill:transparent,stroke:#666,color:#666
+    classDef legendNode fill:transparent,stroke:transparent,color:#666
+    classDef dataNode fill:#FFD6A5,stroke:#FF9A3C,color:#000,margin:15px,stroke-dasharray: 5 5
+
+    %% Main components with emojis and extra padding using non-breaking spaces
+    User["👤   User   "]:::userNode
+    TaskListFile["📝   Task List File   "]:::dataNode
+    
+    subgraph CLI["🖥️  CLI Layer  "]
+        CLI_Interface["🔌   CLI Interface   "]:::interfaceNode
+        Status_Dashboard["📊   Status Dashboard   "]:::interfaceNode
+    end
+    
+    subgraph Core["⚙️  Core Components  "]
+        Task_Manager["📋   Task Manager   "]:::coreNode
+        Claude_Streamer["🔄   Claude Streamer   "]:::coreNode
+    end
+    
+    subgraph Storage["💾  Storage Layer  "]
+        Task_Files["📁   Individual Task Files   "]:::storageNode
+        Results_Files["📄   Results Files   "]:::storageNode
+    end
+    
+    subgraph External["🔗  External Components  "]
+        Claude_Code["🤖   Claude Code   "]:::externalNode
+    end
+    
+    %% User journey flow - more detailed, sequential steps
+    User -->|"1. Creates project with task list"| TaskListFile
+    User -->|"2. Runs CLI command"| CLI_Interface
+    CLI_Interface -->|"3. Passes task list"| Task_Manager
+    TaskListFile -->|"Input"| Task_Manager
+    
+    %% Task processing flow
+    Task_Manager -->|"4. Parses & extracts individual tasks"| Task_Files
+    Task_Manager -->|"5. Processes each task sequentially"| Claude_Streamer
+    Task_Files -->|"6. Loads each task"| Claude_Streamer
+    Claude_Streamer -->|"7. Sends to"| Claude_Code
+    Claude_Code -->|"8. Returns output"| Claude_Streamer
+    Claude_Streamer -->|"9. Saves results"| Results_Files
+    
+    %% Status updates
+    Claude_Streamer -->|"10. Sends completion status"| Task_Manager
+    Task_Manager -->|"11. Updates dashboard"| Status_Dashboard
+    Status_Dashboard -->|"12. Displays progress to"| User
+    Results_Files -->|"13. Available for"| User
+    
+    %% Add Legend with extra padding
+    subgraph Legend["Legend"]
+        User_Legend["👤   User Interface   "]:::userNode
+        Interface_Legend["🔌   CLI Components   "]:::interfaceNode
+        Core_Legend["⚙️   Core System   "]:::coreNode
+        Storage_Legend["💾   Storage   "]:::storageNode
+        External_Legend["🔗   External Services   "]:::externalNode
+        Data_Legend["📝   Input/Output Data   "]:::dataNode
+    end
+    
+    %% Apply container styling
+    class CLI,Core,Storage,External,Legend containerNode
+```
+
 ## Why Use Claude Task Runner?
 
 - **Overcome Context Limitations**: Break down large projects into manageable chunks that fit within Claude's context window.
@@ -32,6 +105,7 @@ Claude Task Runner implements a "Boomerang" approach:
 - **Organize Complex Projects**: Manage multi-step projects with proper structure and sequencing.
 - **Track Progress**: Monitor task completion and project status.
 - **MCP Integration**: Seamlessly integrate with agent workflows through the Model Context Protocol.
+- **Real-time Feedback**: Stream Claude's output in real-time for immediate visibility into progress.
 
 ## Prerequisites
 
@@ -64,6 +138,20 @@ After installation, restart Claude Desktop and ensure you see the hammer icon in
 - **Status Tracking**: Monitor project progress and task completion status
 - **Modern CLI**: Intuitive command-line interface with rich formatting
 - **MCP Integration**: Seamless integration with agent workflows via FastMCP
+- **Performance Optimization**: Shell redirection for fastest Claude execution
+- **Real-time Streaming**: See Claude's output as it's being generated
+- **Robust Error Handling**: Clear error messages and recovery options
+- **Demo Mode**: Test workflow with simulated responses when Claude is unavailable
+
+## Performance Optimization
+
+The latest version of Claude Task Runner features significant performance improvements:
+
+- **Shell Redirection**: Uses `< file > output` style redirection for optimal speed
+- **Context Clearing**: Implements `/clear` between tasks for context isolation
+- **Named Pipes**: Uses FIFO pipes for efficient streaming of Claude's output
+- **Simplified Processing**: Streamlined execution flow without unnecessary overhead
+- **Customizable Pooling**: Configure process pooling to balance performance and resource usage
 
 ## Quick Start
 
@@ -93,54 +181,147 @@ pip install fastmcp
 1. **Create a task list** (see `examples/sample_task_list.md` for a template)
 2. **Create a project and parse tasks**:
    ```bash
+   # Either using module syntax
    python -m task_runner create my_project /path/to/task_list.md
+   # Or using the installed script
+   task-runner create my_project /path/to/task_list.md
    ```
 3. **Run all tasks**:
    ```bash
+   # Either using module syntax
    python -m task_runner run --base-dir ~/claude_task_runner
+   # Or using the installed script
+   task-runner run --base-dir ~/claude_task_runner
    ```
 4. **Check status**:
    ```bash
+   # Either using module syntax
    python -m task_runner status
+   # Or using the installed script
+   task-runner status
    ```
-
-### Quick Demo
-
-For a quick demonstration of Claude Task Runner, we've included a sample demo:
-
-```bash
-# Make the demo script executable
-chmod +x run_demo.sh
-
-# Run the demo
-./run_demo.sh
-```
-
-This will:
-- Create a sample project
-- Parse a task list into individual task files
-- Run all tasks with Claude
-- Show real-time progress and results
 
 For more detailed instructions, see the [Quick Start Guide](docs/QUICKSTART.md).
 
 ## Command Line Interface
 
+The CLI provides a comprehensive set of commands and options for managing Claude tasks:
+
+### Creating Projects
+
 ```bash
-# Create a new project
-python -m task_runner create my_project /path/to/task_list.md
+# Using module syntax
+python -m task_runner create <project_name> <task_list_file>
 
-# Run all tasks in a project
-python -m task_runner run --base-dir ~/claude_task_runner
+# Using installed script
+task-runner create <project_name> <task_list_file>
+```
 
-# Show status of all tasks
-python -m task_runner status --base-dir ~/claude_task_runner
+Parameters:
+- `<project_name>`: Name of your project folder
+- `<task_list_file>`: Path to your markdown file containing tasks
 
-# Clean up any running processes
-python -m task_runner clean --base-dir ~/claude_task_runner
+Example:
+```bash
+# Using module syntax
+python -m task_runner create my_project input/sample_tasks.md
 
-# JSON output for machine-readable results
-python -m task_runner status --json
+# Using installed script
+task-runner create my_project input/sample_tasks.md
+```
+
+### Running Tasks
+
+```bash
+# Using module syntax
+python -m task_runner run [options]
+
+# Using installed script
+task-runner run [options]
+```
+
+Options:
+- `--base-dir PATH`: Base directory for tasks and results (default: ~/claude_task_runner)
+- `--claude-path PATH`: Path to Claude executable (auto-detected by default)
+- `--timeout INT`: Timeout in seconds for each task (default: 300s)
+- `--quick-demo`: Run with simulated responses (no Claude API usage)
+- `--debug-claude`: Enable detailed Claude timing and debugging logs
+- `--no-pool`: Disable process pooling (creates new process for each task)
+- `--pool-size INT`: Maximum number of Claude processes in pool (default: 3)
+- `--reuse-context`: Reuse Claude processes with /clear between tasks (default: True)
+- `--no-streaming`: Disable real-time output streaming (uses simple file redirection)
+- `--json`: Output results as JSON
+
+Example with debugging enabled:
+```bash
+# Using module syntax
+python -m task_runner run input/sample_tasks.md --base-dir ./debug_project --debug-claude
+
+# Using installed script
+task-runner run input/sample_tasks.md --base-dir ./debug_project --debug-claude
+```
+
+Example with demo mode (no API usage):
+```bash
+# Using module syntax
+python -m task_runner run --base-dir ./debug_project --quick-demo
+
+# Using installed script
+task-runner run --base-dir ./debug_project --quick-demo
+```
+
+Example with simple file redirection (faster, but no real-time output):
+```bash
+# Using module syntax
+python -m task_runner run --base-dir ./debug_project --no-streaming
+
+# Using installed script
+task-runner run --base-dir ./debug_project --no-streaming
+```
+
+### Checking Status
+
+```bash
+# Using module syntax
+python -m task_runner status [--base-dir PATH] [--json]
+
+# Using installed script
+task-runner status [--base-dir PATH] [--json]
+```
+
+Options:
+- `--base-dir PATH`: Base directory for tasks and results
+- `--json`: Output status as JSON
+
+Example:
+```bash
+# Using module syntax
+python -m task_runner status --base-dir ./debug_project
+
+# Using installed script
+task-runner status --base-dir ./debug_project
+```
+
+### Cleaning Up Processes
+
+```bash
+# Using module syntax
+python -m task_runner clean [--base-dir PATH]
+
+# Using installed script
+task-runner clean [--base-dir PATH]
+```
+
+Options:
+- `--base-dir PATH`: Base directory for tasks and results
+
+Example:
+```bash
+# Using module syntax
+python -m task_runner clean --base-dir ./debug_project
+
+# Using installed script
+task-runner clean --base-dir ./debug_project
 ```
 
 ## Python API
@@ -158,6 +339,9 @@ task_files = manager.parse_task_list(Path('tasks.md'))
 # Run all tasks
 results = manager.run_all_tasks()
 
+# Run all tasks in demo mode
+results = manager.run_all_tasks(demo_mode=True)
+
 # Get task status
 status = manager.get_task_status()
 ```
@@ -168,19 +352,34 @@ The Task Runner can be used as an MCP server, allowing it to be accessed by Clau
 
 ```bash
 # Start the server with default settings
-python scripts/run_task_runner_server.py start
+# Using module syntax
+python -m task_runner.mcp.server start
+# Or using the installed script
+task-runner-mcp start
 
 # Start with custom settings
-python scripts/run_task_runner_server.py start --host 0.0.0.0 --port 5000 --debug
+# Using module syntax
+python -m task_runner.mcp.server start --host 0.0.0.0 --port 5000 --debug
+# Or using the installed script
+task-runner-mcp start --host 0.0.0.0 --port 5000 --debug
 
 # Check server health
-python scripts/run_task_runner_server.py health
+# Using module syntax
+python -m task_runner.mcp.server health
+# Or using the installed script
+task-runner-mcp health
 
 # Show server info
-python scripts/run_task_runner_server.py info
+# Using module syntax
+python -m task_runner.mcp.server info
+# Or using the installed script
+task-runner-mcp info
 
 # Display server schema
-python scripts/run_task_runner_server.py schema
+# Using module syntax
+python -m task_runner.mcp.server schema
+# Or using the installed script
+task-runner-mcp schema
 ```
 
 The server exposes the following MCP functions:
@@ -206,14 +405,17 @@ claude_task_runner/
 ├── src/
 │   └── task_runner/
 │       ├── core/           # Core business logic
-│       │   └── task_manager.py
-│       ├── presentation/   # UI components
-│       │   └── formatters.py
-│       ├── cli.py          # CLI interface
+│       │   ├── task_manager.py
+│       │   └── claude_streamer.py  # Real-time output streaming
+│       ├── cli/            # CLI interface
+│       │   ├── app.py      # Typer application with commands
+│       │   ├── formatters.py # Rich-based output formatting
+│       │   ├── validators.py # Input validation
+│       │   └── schemas.py  # Data models and schemas
 │       └── mcp/            # MCP integration
-│           ├── schema.py
-│           ├── wrapper.py
-│           └── mcp_server.py
+│           ├── schema.py   # MCP schema definitions
+│           ├── wrapper.py  # FastMCP wrappers
+│           └── mcp_server.py # MCP server implementation
 ├── scripts/                # Utility scripts
 ├── tests/                  # Test files
 ├── docs/                   # Documentation

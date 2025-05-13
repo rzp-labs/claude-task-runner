@@ -37,13 +37,18 @@ We've created a sample task list in `input/sample_tasks.md` with four different 
 - Create Unit Test Examples
 - Develop CLI Argument Parser
 
-### 2. Demo Script
+### 2. CLI Commands
 
-A `run_demo.sh` script that demonstrates:
+A set of CLI commands that demonstrate:
 - Creating a project from the task list
 - Running all tasks with Claude
-- Displaying real-time progress
-- Showing final task status
+- Displaying real-time progress with streaming output
+- Showing task status
+
+Example of running tasks with debugging:
+```bash
+python -m task_runner run input/sample_tasks.md --base-dir ./debug_project --debug-claude
+```
 
 ### 3. Updated Documentation
 
@@ -69,13 +74,16 @@ To test the Claude Task Runner proof of concept:
    pip install -e .
    ```
 
-2. **Run the Demo**
+2. **Test Using CLI Commands**
    ```bash
-   # Make the demo script executable
-   chmod +x run_demo.sh
-
-   # Run the demo
-   ./run_demo.sh
+   # Create a project from the task list
+   python -m task_runner create debug_project input/sample_tasks.md
+   
+   # Run the tasks with debugging enabled
+   python -m task_runner run --base-dir ./debug_project --debug-claude
+   
+   # Check task status
+   python -m task_runner status --base-dir ./debug_project
    ```
 
 3. **Examine Results**
