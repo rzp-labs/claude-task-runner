@@ -55,7 +55,6 @@ flowchart TD
     TaskRunner -->|"Sends task to"| ClaudeCode
     ClaudeCode -->|"Results & /clear"| ResultsFiles
     ResultsFiles -->|"Completes task & updates"| TaskRunner
-
     
     %% Loop back for next task
     TaskRunner -.->|"Repeats for next task"| TaskFiles
