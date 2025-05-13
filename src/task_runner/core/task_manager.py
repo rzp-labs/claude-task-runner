@@ -289,7 +289,8 @@ class TaskManager:
     
     def run_task(self, task_file: Path, timeout_seconds: int = 300, 
                  fast_mode: bool = True, demo_mode: bool = False,
-                 use_streaming: bool = True) -> Tuple[bool, Dict[str, Any]]:
+                 use_streaming: bool = True, raw_json: bool = False,
+                 quiet: bool = False) -> Tuple[bool, Dict[str, Any]]:
         """
         Run a single task with Claude using either streaming or simple file redirection
         
@@ -299,6 +300,8 @@ class TaskManager:
             fast_mode: Use --no-auth-check for faster execution
             demo_mode: Run in demo mode (simulate Claude output for testing)
             use_streaming: Whether to use real-time streaming output (True) or simple file redirection (False)
+            raw_json: Whether to output raw JSON instead of human-friendly format (only applies when use_streaming=True)
+            quiet: Whether to suppress console output (still writes to files, only applies when use_streaming=True)
             
         Returns:
             Tuple of (success, task_state)
@@ -453,7 +456,9 @@ class TaskManager:
                         error_file=str(error_file),
                         claude_path=str(self.claude_path),
                         cmd_args=cmd_args,
-                        timeout_seconds=timeout_seconds
+                        timeout_seconds=timeout_seconds,
+                        raw_json=raw_json,
+                        quiet=quiet
                     )
                     
                     # Get execution time and exit code from the result
@@ -594,7 +599,8 @@ class TaskManager:
     
     def run_all_tasks(self, timeout_seconds: int = 300, 
                      fast_mode: bool = True, demo_mode: bool = False,
-                     use_streaming: bool = True) -> Dict[str, Any]:
+                     use_streaming: bool = True, raw_json: bool = False,
+                     quiet: bool = False) -> Dict[str, Any]:
         """
         Run all tasks in the tasks directory
         
@@ -603,6 +609,8 @@ class TaskManager:
             fast_mode: Use --no-auth-check for faster execution  
             demo_mode: Run in demo mode (simulate Claude output for testing)
             use_streaming: Whether to use real-time streaming output (True) or simple file redirection (False)
+            raw_json: Whether to output raw JSON instead of human-friendly format (only applies when use_streaming=True)
+            quiet: Whether to suppress console output (still writes to files, only applies when use_streaming=True)
             
         Returns:
             Summary of execution results
@@ -649,7 +657,9 @@ class TaskManager:
                 timeout_seconds=timeout_seconds,
                 fast_mode=fast_mode,
                 demo_mode=demo_mode,
-                use_streaming=use_streaming
+                use_streaming=use_streaming,
+                raw_json=raw_json,
+                quiet=quiet
             )
             
             results["task_results"][task_name] = task_result

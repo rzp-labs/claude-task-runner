@@ -77,7 +77,9 @@ def stream_claude_output(
     error_file: Optional[str] = None,
     claude_path: Optional[str] = None,
     cmd_args: Optional[List[str]] = None,
-    timeout_seconds: int = 300
+    timeout_seconds: int = 300,
+    raw_json: bool = False,  # Whether to output raw JSON instead of human-friendly format
+    quiet: bool = False      # Whether to suppress console output (still writes to files)
 ) -> Dict[str, Any]:
     """
     Run Claude on a task file and stream its output in real-time using pexpect.
@@ -89,6 +91,8 @@ def stream_claude_output(
         claude_path: Path to the Claude executable (found automatically if None)
         cmd_args: Additional command-line arguments for Claude
         timeout_seconds: Maximum execution time in seconds
+        raw_json: Whether to output raw JSON instead of human-friendly format
+        quiet: Whether to suppress console output (still writes to files)
         
     Returns:
         Dictionary with execution results including success status, time taken, and file paths
@@ -183,8 +187,10 @@ def stream_claude_output(
                     logger.warning(f"Failed to clean up command file: {cleanup_error}")
                 raise
             
-            # Enable echoing to see output in real-time in our terminal
-            child.logfile_read = sys.stdout
+            # Only send output to stdout if not in quiet mode
+            if not quiet:
+                # Use sys.stdout for real-time output
+                child.logfile_read = sys.stdout
             
             # Make sure we're capturing all output
             child.logfile = result_output
@@ -253,34 +259,70 @@ def stream_claude_output(
                                 # Log the basic structure
                                 logger.debug(f"JSON keys: {', '.join(data.keys())}")
                                 
+                                # If raw_json is True, write the raw JSON to the output file
+                                if raw_json:
+                                    # Use pretty formatting to make it more readable
+                                    pretty_json = json.dumps(data, indent=2)
+                                    result_output.write(pretty_json + "\n")
+                                    result_output.flush()
+                                    logger.info(f"Claude JSON: {line[:80]}...")
+                                    continue  # Skip further processing
+                                
                                 # Extract content if available
                                 if 'content' in data:
                                     content = data['content']
                                     # Handle both string and list content formats
                                     if isinstance(content, str):
                                         if content and content.strip():
-                                            # Write to result file
+                                            # Write to result file (plain text)
                                             result_output.write(content)
                                             result_output.flush()
                                             # Log nicely formatted content
                                             logger.info(f"Claude: {content.strip()}")
                                     elif isinstance(content, list):
                                         # Content is a list of content blocks (new format)
+                                        # For the result file, we'll create a human-friendly version
                                         for block in content:
                                             if isinstance(block, dict) and 'text' in block and block.get('type') == 'text':
                                                 text = block['text']
                                                 if text and text.strip():
-                                                    # Write to result file
+                                                    # Write to result file (plain text)
                                                     result_output.write(text)
                                                     result_output.flush()
                                                     # Log nicely formatted content
                                                     logger.info(f"Claude: {text.strip()}")
                                             elif isinstance(block, dict) and block.get('type') == 'tool_use':
-                                                tool_info = f"Tool use: {block.get('name', 'unknown')} - {json.dumps(block.get('input', {}))}"
-                                                logger.info(f"Claude tool use: {tool_info}")
-                                                result_output.write(f"\n[Tool Use: {tool_info}]\n")
+                                                # Format tool use in a more human-readable way
+                                                tool_name = block.get('name', 'unknown')
+                                                tool_input = block.get('input', {})
+                                                
+                                                # Create a human-readable description of the tool use
+                                                if tool_name == "Task":
+                                                    # Special formatting for Task tool
+                                                    description = tool_input.get('description', 'No description')
+                                                    prompt = tool_input.get('prompt', 'No prompt')
+                                                    tool_info = f"\n--- Claude is completing task: {description} ---\n"
+                                                    logger.info(f"Claude starting task: {description}")
+                                                else:
+                                                    # General formatting for other tools
+                                                    tool_info = f"\n--- Claude is using tool: {tool_name} ---\n"
+                                                    # Format the input parameters nicely
+                                                    for key, value in tool_input.items():
+                                                        tool_info += f"  - {key}: {value}\n"
+                                                    logger.info(f"Claude using tool: {tool_name}")
+                                                
+                                                # Write to result file in a human-readable format
+                                                result_output.write(tool_info)
                                                 result_output.flush()
-                                    # Log the entire content for debugging
+                                                
+                                            elif isinstance(block, dict) and block.get('type') == 'image':
+                                                # Handle image blocks
+                                                image_info = "\n[Image content not shown in text output]\n"
+                                                result_output.write(image_info)
+                                                result_output.flush()
+                                                logger.info("Claude included an image in response")
+                                            
+                                    # Store the original JSON in debug log for reference
                                     logger.debug(f"Content structure: {type(content)} - {str(content)[:100]}...")
                                 
                                 # Extract completion info if available

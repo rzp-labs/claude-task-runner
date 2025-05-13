@@ -22,6 +22,7 @@ Expected output:
 """
 
 import sys
+import time
 from pathlib import Path
 from typing import Optional
 
@@ -101,6 +102,12 @@ def run(
     no_streaming: bool = typer.Option(
         False, "--no-streaming", help="Disable real-time output streaming (uses simple file redirection)"
     ),
+    raw_json: bool = typer.Option(
+        False, "--raw-json", help="Output raw JSON format instead of human-friendly text"
+    ),
+    no_table_repeat: bool = typer.Option(
+        False, "--no-table-repeat", help="Display the table only once, don't repeat after each task (better with streaming)"
+    ),
 ):
     """
     Run tasks with Claude in isolated contexts.
@@ -156,7 +163,9 @@ def run(
                 timeout_seconds=timeout,
                 fast_mode=False,
                 demo_mode=quick_demo,
-                use_streaming=not no_streaming
+                use_streaming=not no_streaming,
+                raw_json=raw_json,
+                quiet=True  # Always use quiet mode with JSON output
             )
             print_json(results)
         else:
@@ -169,7 +178,18 @@ def run(
             
             print_info(f"Processing {len(task_files)} tasks:")
             
-            # Process tasks with status updates
+            # Show initial dashboard
+            components = create_dashboard(
+                manager.task_state,
+                manager.current_task,
+                manager.current_task_start_time
+            )
+            
+            # Display each component
+            for component in components:
+                console.print(component)
+            
+            # Process tasks with improved status updates
             for task_file in task_files:
                 task_name = task_file.stem
                 
@@ -179,36 +199,60 @@ def run(
                 ]:
                     continue
                 
-                # Show current status before running
-                components = create_dashboard(
-                    manager.task_state,
-                    manager.current_task,
-                    manager.current_task_start_time
-                )
+                # Always show a clear separator between tasks
+                print("\n" + "=" * 80)
+                print_info(f"Starting task: {task_name}")
+                print("-" * 80 + "\n")
                 
-                # Display each component
-                for component in components:
-                    console.print(component)
-                
-                # Run the task
-                # Use appropriate configuration based on options
+                # Run the task with appropriate settings
                 task_timeout = 30 if quick_demo else timeout
-                success, _ = manager.run_task(task_file, task_timeout, fast_mode=False, demo_mode=quick_demo, use_streaming=not no_streaming)
+                # We should never use quiet mode when using streaming
+                # The table redraw issue is handled by the no_table_repeat flag instead
+                use_quiet = False
                 
-                # Show updated status after task completes
-                print("\n\n")
-                components = create_dashboard(
-                    manager.task_state,
-                    manager.current_task,
-                    manager.current_task_start_time
+                success, _ = manager.run_task(
+                    task_file, 
+                    task_timeout, 
+                    fast_mode=False, 
+                    demo_mode=quick_demo, 
+                    use_streaming=not no_streaming,
+                    raw_json=raw_json,
+                    quiet=use_quiet
                 )
                 
-                # Display each component
-                for component in components:
-                    console.print(component)
+                # Always print a clear separator for task completion
+                print("\n" + "-" * 80)
+                
+                # Show status update based on the chosen mode
+                if no_table_repeat:
+                    # Just print a simple status update
+                    if success:
+                        print_success(f"Task {task_name} completed successfully")
+                    else:
+                        print_error(f"Task {task_name} failed")
+                        
+                    # Brief pause to allow reading the status
+                    time.sleep(0.5)
+                    
+                    # Optionally print a minimal summary of progress
+                    summary = manager.get_task_summary()
+                    completed = summary['completed']
+                    total = summary['total']
+                    print_info(f"Progress: {completed}/{total} tasks completed ({int(completed/total*100)}%)")
+                else:
+                    # Show updated status after task completes with full dashboard
+                    print("\n")
+                    components = create_dashboard(
+                        manager.task_state,
+                        manager.current_task,
+                        manager.current_task_start_time
+                    )
+                    
+                    # Display each component
+                    for component in components:
+                        console.print(component)
                     
                     # Wait between tasks
-                    import time
                     time.sleep(1)
             
             # Final status
