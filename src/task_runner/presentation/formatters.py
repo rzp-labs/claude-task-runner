@@ -27,7 +27,7 @@ Expected output:
 import os
 import json
 from datetime import datetime
-from typing import Dict, List, Any, Optional, Union
+from typing import Dict, List, Any, Optional, Union, Sequence
 
 from rich.console import Console
 from rich.table import Table
@@ -71,6 +71,8 @@ def create_status_table(task_state: Dict[str, Dict[str, Any]], current_task: Opt
         Rich table with task status
     """
     table = Table(title="Task Status")
+    # Enable hyperlinks in the table
+    table.caption = "[dim]Tasks are clickable links to their files[/dim]"
     
     table.add_column("Task", style="cyan")
     table.add_column("Status", style="magenta")
@@ -78,6 +80,7 @@ def create_status_table(task_state: Dict[str, Dict[str, Any]], current_task: Opt
     table.add_column("Completed", style="green")
     table.add_column("Time (s)", justify="right")
     table.add_column("Exit Code", justify="right")
+    table.add_column("Result", style="blue", justify="center")
     
     for task_name, state in sorted(task_state.items()):
         status = state.get("status", "unknown")
@@ -117,14 +120,27 @@ def create_status_table(task_state: Dict[str, Dict[str, Any]], current_task: Opt
         else:
             status_style = COLORS["pending"]
         
-        # Add spinner for running task
-        task_display = task_name
+        # Format task name with link and status highlighting
+        file_path = state.get("task_file", "")
+        if file_path:
+            # Make task name a clickable link to the file
+            task_display = f"[link=file://{file_path}]{task_name}[/link]"
+        else:
+            task_display = task_name
+            
+        # Add bold styling for running task
         if status == "running":
-            task_display = f"[bold blue]{task_name}[/bold blue]"
+            task_display = f"[bold blue]{task_display}[/bold blue]"
         
         exit_code = state.get("exit_code", "")
         if exit_code == "":
             exit_code = ""
+            
+        # Add result link if completed
+        result_link = ""
+        result_file = state.get("result_file", "")
+        if status == "completed" and result_file:
+            result_link = f"[link=file://{result_file}]View[/link]"
         
         table.add_row(
             task_display,
@@ -132,7 +148,8 @@ def create_status_table(task_state: Dict[str, Dict[str, Any]], current_task: Opt
             started,
             completed,
             execution_time,
-            str(exit_code)
+            str(exit_code),
+            result_link
         )
     
     return table

@@ -27,7 +27,7 @@ from typing import Optional
 
 import typer
 from loguru import logger
-from rich.live import Live
+from rich.console import Console
 
 from task_runner.core.task_manager import TaskManager
 from task_runner.presentation.formatters import (
@@ -40,11 +40,13 @@ from task_runner.presentation.formatters import (
 )
 
 
-# Initialize typer app
+# Initialize typer app and rich console
 app = typer.Typer(
     help="Claude Task Runner",
     rich_markup_mode="rich"
 )
+
+console = Console()
 
 
 @app.command()
@@ -64,6 +66,12 @@ def run(
     ),
     json_output: bool = typer.Option(
         False, "--json", help="Output results as JSON"
+    ),
+    timeout: int = typer.Option(
+        300, "--timeout", help="Timeout in seconds for each task (default: 300s)"
+    ),
+    quick_demo: bool = typer.Option(
+        False, "--quick-demo", help="Run a quick demo with reduced timeouts"
     ),
 ):
     """
@@ -133,7 +141,9 @@ def run(
                     console.print(component)
                 
                 # Run the task
-                success, _ = manager.run_task(task_file)
+                # Use quick timeout for demo mode
+                task_timeout = 30 if quick_demo else timeout
+                success, _ = manager.run_task(task_file, task_timeout)
                 
                 # Show updated status after task completes
                 print("\n\n")

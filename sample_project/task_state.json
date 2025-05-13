@@ -30,23 +30,14 @@
     "name": "002_generate_documentation_template",
     "status": "running",
     "created_at": "2025-05-13T09:26:47.911626",
-    "updated_at": "2025-05-13T09:28:07.774539",
+    "updated_at": "2025-05-13T09:34:54.738329",
     "title": "Generate Documentation Template",
     "task_file": "sample_project/tasks/002_generate_documentation_template.md",
     "result_file": "sample_project/results/002_generate_documentation_template.result",
     "error_file": "sample_project/results/002_generate_documentation_template.error",
-    "started_at": "2025-05-13T09:28:05.116432",
-    "process_id": 37560,
-    "child_processes": [
-      37633,
-      37642,
-      37644,
-      37646,
-      37648,
-      37650,
-      37651,
-      37723
-    ]
+    "started_at": "2025-05-13T09:34:52.568925",
+    "process_id": 44016,
+    "child_processes": []
   },
   "003_create_unit_test_examples": {
     "name": "003_create_unit_test_examples",
