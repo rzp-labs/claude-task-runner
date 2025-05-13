@@ -1,0 +1,78 @@
+[build-system]
+requires = ["setuptools>=42", "wheel"]
+build-backend = "setuptools.build_meta"
+
+[project]
+name = "task_runner"
+version = "0.1.0"
+description = "Boomerang Mode for Claude where claude instances are spawned per task and then killed when complete."
+authors = [
+    {name = "Graham Anderson", email = "graham@grahama.co"}
+]
+readme = "README.md"
+requires-python = ">=3.10.11"
+license = {text = "MIT"}
+dependencies = [
+    "mcp",
+    "pillow",
+    "loguru",
+    "mss",
+    "rich",
+    "screeninfo>=0.8.1",
+    "litellm>=1.68.2",
+    "json-repair>=0.44.1",
+    "redis>=6.0.0",
+    "python-dotenv>=1.1.0",
+    # API centric
+    "google-auth>=2.39.0",
+    "google-auth-oauthlib>=1.2.2",
+    "typer>=0.15.3",
+    "python-arango>=8.1.6",
+]
+
+[project.optional-dependencies]
+dev = [
+    "pytest>=7.0.0",
+    "pytest-cov>=4.0.0",
+    "black>=23.0.0",
+    "isort>=5.0.0",
+    "mypy>=1.0.0",
+]
+
+[project.urls]
+"Homepage" = "https://github.com/grahama1970/claude_task_runner"
+"Bug Tracker" = "https://github.com/grahama1970/claude_task_runner/issues"
+
+[tool.setuptools]
+package-dir = {"" = "src"}
+
+[tool.setuptools.packages.find]
+where = ["src"]
+
+[tool.black]
+line-length = 100
+target-version = ["py38"]
+
+[tool.pytest.ini_options]
+testpaths = ["tests"]
+python_files = "test_*.py"
+python_classes = "Test*"
+python_functions = "test_*"
+addopts = "--strict-markers --cov=task_runner"
+markers = [
+    "unit: marks tests as unit tests",
+    "integration: marks tests as integration tests",
+    "mcp: marks tests that require MCP infrastructure",
+]
+
+[tool.isort]
+profile = "black"
+line_length = 100
+multi_line_output = 3
+
+[tool.mypy]
+python_version = "3.10"
+warn_return_any = true
+warn_unused_configs = true
+disallow_untyped_defs = true
+disallow_incomplete_defs = true

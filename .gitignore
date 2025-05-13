@@ -1,0 +1,104 @@
+# Python
+__pycache__/
+*.py[cod]
+*$py.class
+*.so
+.Python
+build/
+develop-eggs/
+dist/
+downloads/
+eggs/
+.eggs/
+lib/
+lib64/
+parts/
+sdist/
+var/
+wheels/
+*.egg-info/
+.installed.cfg
+*.egg
+
+# Virtual Environments
+.env
+.venv
+env/
+venv/
+ENV/
+env.bak/
+venv.bak/
+archive/
+examples
+logs
+scripts
+
+# Distribution / packaging
+.Python
+env/
+build/
+develop-eggs/
+dist/
+downloads/
+eggs/
+.eggs/
+lib/
+lib64/
+parts/
+sdist/
+var/
+wheels/
+*.egg-info/
+.installed.cfg
+*.egg
+
+# API Keys and Secrets
+**/vertex_ai_service_account.json
+**/*api_key*
+**/*secret*
+**/*password*
+**/*.pem
+**/*.key
+.env
+**/.env
+**/.env.*
+**/*.env
+**/config.ini
+**/config.json
+**/secrets.json
+**/credentials.json
+**/credentials.yml
+**/credentials.yaml
+
+# Claude specific
+**/.claude/settings.local.json
+**/.mcp.json
+.claude
+
+
+# Logs and databases
+*.log
+*.sqlite
+*.db
+
+# OS specific
+.DS_Store
+.DS_Store?
+._*
+.Spotlight-V100
+.Trashes
+ehthumbs.db
+Thumbs.db
+
+# Editor directories and files
+.idea/
+.vscode/
+*.swp
+*.swo
+*~
+
+# Screenshots and images (optional, uncomment if needed)
+# screenshots/*.jpg
+# screenshots/*.png
+# sample_images/*.jpg
+# sample_images/*.png

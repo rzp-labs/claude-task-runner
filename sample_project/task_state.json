@@ -1,0 +1,71 @@
+{
+  "001_analyze_python_code_structure": {
+    "name": "001_analyze_python_code_structure",
+    "status": "completed",
+    "created_at": "2025-05-13T09:26:47.910991",
+    "updated_at": "2025-05-13T09:28:04.110546",
+    "title": "Analyze Python Code Structure",
+    "task_file": "sample_project/tasks/001_analyze_python_code_structure.md",
+    "result_file": "sample_project/results/001_analyze_python_code_structure.result",
+    "error_file": "sample_project/results/001_analyze_python_code_structure.error",
+    "started_at": "2025-05-13T09:27:05.175299",
+    "process_id": 36438,
+    "child_processes": [
+      36545,
+      36547,
+      36549,
+      36551,
+      36553,
+      36554,
+      36633,
+      36537
+    ],
+    "completed_at": "2025-05-13T09:28:04.110534",
+    "exit_code": 0,
+    "execution_time": 56.21758008003235,
+    "result_size": 2700,
+    "clean_termination": true
+  },
+  "002_generate_documentation_template": {
+    "name": "002_generate_documentation_template",
+    "status": "running",
+    "created_at": "2025-05-13T09:26:47.911626",
+    "updated_at": "2025-05-13T09:28:07.774539",
+    "title": "Generate Documentation Template",
+    "task_file": "sample_project/tasks/002_generate_documentation_template.md",
+    "result_file": "sample_project/results/002_generate_documentation_template.result",
+    "error_file": "sample_project/results/002_generate_documentation_template.error",
+    "started_at": "2025-05-13T09:28:05.116432",
+    "process_id": 37560,
+    "child_processes": [
+      37633,
+      37642,
+      37644,
+      37646,
+      37648,
+      37650,
+      37651,
+      37723
+    ]
+  },
+  "003_create_unit_test_examples": {
+    "name": "003_create_unit_test_examples",
+    "status": "pending",
+    "created_at": "2025-05-13T09:26:47.912185",
+    "updated_at": "2025-05-13T09:26:47.912191",
+    "title": "Create Unit Test Examples",
+    "task_file": "sample_project/tasks/003_create_unit_test_examples.md",
+    "result_file": "sample_project/results/003_create_unit_test_examples.result",
+    "error_file": "sample_project/results/003_create_unit_test_examples.error"
+  },
+  "004_develop_cli_argument_parser": {
+    "name": "004_develop_cli_argument_parser",
+    "status": "pending",
+    "created_at": "2025-05-13T09:26:47.912687",
+    "updated_at": "2025-05-13T09:26:47.912693",
+    "title": "Develop CLI Argument Parser",
+    "task_file": "sample_project/tasks/004_develop_cli_argument_parser.md",
+    "result_file": "sample_project/results/004_develop_cli_argument_parser.result",
+    "error_file": "sample_project/results/004_develop_cli_argument_parser.error"
+  }
+}

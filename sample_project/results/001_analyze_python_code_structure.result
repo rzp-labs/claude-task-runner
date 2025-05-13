@@ -1,0 +1,73 @@
+# Claude Task Runner - Python Codebase Analysis
+
+## Core Components
+
+1. **TaskManager** (`core/task_manager.py`)
+   - Central component handling task execution and management
+   - Manages task state, parsing, and execution with Claude CLI
+   - Tracks task status (pending, running, completed, failed, timeout)
+   - Handles process management including child process tracking
+
+2. **CLI Interface** (`cli.py`)
+   - Command-line interface built with Typer and Rich
+   - Provides commands: run, status, create, clean
+   - User-friendly presentation of task status and results
+
+3. **MCP Integration** (`mcp/` directory)
+   - Enables Model Context Protocol integration
+   - `wrapper.py`: Wraps core functionality for MCP access
+   - `schema.py`: Defines JSON schemas for MCP functions
+   - `mcp_server.py`: MCP server implementation
+
+4. **Presentation Layer** (`presentation/formatters.py`)
+   - Rich-formatted UI components (tables, panels, progress indicators)
+   - Handles displaying task status, results, and error messages
+
+## Project Architecture
+
+The project follows a well-structured layered architecture:
+
+1. **Core Layer**: Pure business logic without UI dependencies
+   - Task management functionality
+   - Task parsing and execution
+   - Process handling
+
+2. **Presentation Layer**: UI components and formatting
+   - Rich formatting for console output
+   - Status dashboards and progress indicators
+   - Error/info/warning messaging
+
+3. **Integration Layer**: External connectivity
+   - MCP protocol integration
+   - Schema definitions
+   - API endpoints for external access
+
+## Main Entry Points
+
+1. **CLI Entry Point** (`__main__.py` → `cli.py`)
+   - Primary user interface through command line
+   - Entry point when running as a module
+
+2. **MCP Server** (`mcp/mcp_server.py`)
+   - Runs as a server exposing MCP API endpoints
+   - Handles requests through the MCP protocol
+
+## Execution Flow
+
+1. Task Processing:
+   - User provides task list in markdown format
+   - TaskManager parses into individual task files
+   - Each task is executed with Claude CLI in isolation
+   - Results are captured and stored
+   - Task state is tracked and displayed
+
+2. API Functions (via MCP):
+   - `run_task`: Execute single task
+   - `run_all_tasks`: Execute all tasks
+   - `parse_task_list`: Break task list into individual tasks
+   - `create_project`: Set up new project with tasks
+   - `get_task_status`: Get current task status
+   - `get_task_summary`: Get summary statistics
+   - `clean`: Cleanup running processes
+
+This codebase demonstrates excellent separation of concerns, with distinct layers for core functionality, presentation, and integration, facilitating maintainability and extensibility.
