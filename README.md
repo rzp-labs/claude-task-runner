@@ -71,6 +71,12 @@ flowchart TD
 - **MCP Integration**: Seamlessly integrate with agent workflows through the Model Context Protocol.
 - **Real-time Feedback**: Stream Claude's output in real-time for immediate visibility into progress.
 
+## Demo
+
+![Claude Task Runner in action](images/demo_usage.gif)
+
+*Demonstration of Claude Task Runner processing a sequence of tasks with real-time output streaming*
+
 ## Prerequisites
 
 This package requires the following to be installed on your system:
