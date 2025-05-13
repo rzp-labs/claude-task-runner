@@ -283,28 +283,9 @@ class TaskManager:
             
         logger.info("Clearing Claude context")
         
-        # Use echo to pipe /clear to Claude
-        cmd = f"echo '/clear' | {self.claude_path}"
-        
-        try:
-            process = subprocess.run(
-                cmd,
-                shell=True,
-                check=True,
-                stdout=subprocess.PIPE,
-                stderr=subprocess.PIPE,
-                timeout=10
-            )
-            
-            if process.returncode == 0:
-                logger.info("Claude context cleared successfully")
-                return True
-            else:
-                logger.warning(f"Context clearing failed: {process.stderr.decode()}")
-                return False
-        except Exception as e:
-            logger.error(f"Error clearing context: {e}")
-            return False
+        # Use the dedicated function from claude_streamer
+        from task_runner.core.claude_streamer import clear_claude_context
+        return clear_claude_context(str(self.claude_path))
     
     def run_task(self, task_file: Path, timeout_seconds: int = 300, 
                  fast_mode: bool = True, demo_mode: bool = False,

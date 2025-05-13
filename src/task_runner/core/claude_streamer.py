@@ -39,6 +39,7 @@ import subprocess
 import os
 import tempfile
 import signal
+import json
 from pathlib import Path
 from typing import Dict, List, Any, Optional, TextIO
 
@@ -132,18 +133,44 @@ def stream_claude_output(
         
         # Open result file for writing
         with open(result_file, 'w') as result_output, open(error_file, 'w') as error_output:
-            # Start Claude process with pexpect and directly pass the file
-            modified_cmd = f"{claude_path} --print --verbose {task_file}"
-            logger.info(f"Using direct file input with command: {modified_cmd}")
+            # Create a temporary file to store the Claude command
+            # This approach avoids issues with quoting and special characters
+            with tempfile.NamedTemporaryFile(mode='w', suffix='.sh', delete=False) as cmd_file:
+                # Write the command to the file
+                cmd_file_path = cmd_file.name
+                
+                # Build the basic command with output format
+                cmd_file.write("#!/bin/bash\n")
+                cmd_file.write(f"{claude_path} --print --verbose --output-format stream-json ")
+                
+                # Add any additional command arguments
+                if cmd_args:
+                    cmd_file.write(f"{' '.join(cmd_args)} ")
+                
+                # Add input redirection from the task file
+                cmd_file.write(f"< {task_file}")
+                
+                # Make the command file executable
+                os.chmod(cmd_file_path, 0o755)
             
-            # Spawn process with the task file as direct input
-            child = pexpect.spawn(
-                modified_cmd,
-                encoding='utf-8',
-                timeout=timeout_seconds,
-                # Ensure window size is large enough for Claude's output
-                dimensions=(80, 200)
-            )
+            logger.info(f"Created command file at {cmd_file_path}")
+            
+            try:
+                # Spawn the process using the command file
+                logger.info(f"Executing command via {cmd_file_path}")
+                child = pexpect.spawn(
+                    cmd_file_path,
+                    encoding='utf-8',
+                    timeout=timeout_seconds,
+                    # Ensure window size is large enough for Claude's output
+                    dimensions=(80, 200)
+                )
+            finally:
+                # Clean up the command file when done
+                try:
+                    os.unlink(cmd_file_path)
+                except Exception as e:
+                    logger.warning(f"Failed to remove temporary command file: {e}")
             
             # Enable echoing to see output in real-time in our terminal
             child.logfile_read = sys.stdout
@@ -165,7 +192,7 @@ def stream_claude_output(
             while True:
                 try:
                     # Wait for any output with a 1-second timeout (allows interruption check)
-                    patterns = [pexpect.TIMEOUT, pexpect.EOF]
+                    patterns = [pexpect.TIMEOUT, pexpect.EOF, '\r\n']
                     index = child.expect(patterns, timeout=1)
                     
                     if index == 0:  # TIMEOUT - No output in the last 1 second
@@ -192,6 +219,69 @@ def stream_claude_output(
                     elif index == 1:  # EOF - Process completed
                         logger.info("Claude process completed")
                         break
+                        
+                    elif index == 2:  # Got a line of output
+                        # Get the raw output line
+                        line = child.before
+                        if line:
+                            line = line.strip()
+                            
+                        # Reset timeout trackers since we got output
+                        last_output_time = time.time()
+                        
+                        # Skip empty lines
+                        if not line:
+                            continue
+                            
+                        # Try to parse as JSON if it starts with a brace
+                        if line.startswith('{'):
+                            try:
+                                # Parse the JSON output from Claude's stream-json format
+                                data = json.loads(line)
+                                
+                                # Extract content if available
+                                if 'content' in data:
+                                    content = data['content']
+                                    if content and content.strip():
+                                        # Write to result file
+                                        result_output.write(content)
+                                        result_output.flush()
+                                        # Log nicely formatted content
+                                        logger.info(f"Claude: {content.strip()}")
+                                
+                                # Extract completion info if available
+                                elif 'completion_id' in data:
+                                    logger.info(f"Completion ID: {data['completion_id']}")
+                                
+                                # Extract error info if available    
+                                elif 'error' in data:
+                                    error_msg = data['error'].get('message', 'Unknown error')
+                                    logger.error(f"Claude error: {error_msg}")
+                                    error_output.write(f"Error: {error_msg}\n")
+                                    error_output.flush()
+                            
+                            except json.JSONDecodeError:
+                                # Not valid JSON, just log the raw line
+                                if '[ERROR]' in line:
+                                    logger.error(f"Claude error: {line}")
+                                    error_output.write(f"{line}\n")
+                                    error_output.flush()
+                                else:
+                                    # Regular output line
+                                    logger.info(f"Claude output: {line}")
+                                    result_output.write(f"{line}\n")
+                                    result_output.flush()
+                        else:
+                            # Not JSON, write to appropriate output
+                            if '[ERROR]' in line:
+                                logger.error(f"Claude error: {line}")
+                                error_output.write(f"{line}\n")
+                                error_output.flush()
+                            else:
+                                # Regular output line
+                                logger.info(f"Claude output: {line}")
+                                result_output.write(f"{line}\n")
+                                result_output.flush()
                     
                 except KeyboardInterrupt:
                     logger.warning("Process interrupted by user")
@@ -290,25 +380,38 @@ def clear_claude_context(claude_path: Optional[str] = None) -> bool:
     logger.info("Clearing Claude context...")
     
     try:
-        # Use pexpect to send the /clear command
-        child = pexpect.spawn(claude_path, encoding='utf-8', timeout=10)
-        child.sendline("/clear")
+        # Create a temporary file with the /clear command
+        with tempfile.NamedTemporaryFile(mode='w', suffix='.sh', delete=False) as cmd_file:
+            cmd_file_path = cmd_file.name
+            cmd_file.write("#!/bin/bash\n")
+            cmd_file.write(f"echo '/clear' | {claude_path}")
+            os.chmod(cmd_file_path, 0o755)
         
-        # Look for confirmation message or prompt
-        patterns = [pexpect.TIMEOUT, pexpect.EOF, "Context cleared"]
-        index = child.expect(patterns, timeout=5)
-        
-        success = index == 2 or index == 1  # Success if we see "Context cleared" or EOF
-        
-        # Close the process
-        child.close(force=True)
-        
-        if success:
-            logger.info("Claude context cleared successfully")
-            return True
-        else:
-            logger.warning("Context clearing failed - no confirmation received")
-            return False
+        try:
+            # Use pexpect to run the command
+            child = pexpect.spawn(cmd_file_path, encoding='utf-8', timeout=10)
+            
+            # Look for confirmation message or prompt
+            patterns = [pexpect.TIMEOUT, pexpect.EOF, "Context cleared"]
+            index = child.expect(patterns, timeout=5)
+            
+            success = index == 2 or index == 1  # Success if we see "Context cleared" or EOF
+            
+            # Close the process
+            child.close(force=True)
+            
+            if success:
+                logger.info("Claude context cleared successfully")
+                return True
+            else:
+                logger.warning("Context clearing failed - no confirmation received")
+                return False
+        finally:
+            # Clean up the temporary file
+            try:
+                os.unlink(cmd_file_path)
+            except Exception as e:
+                logger.warning(f"Failed to remove temporary clear command file: {e}")
     except Exception as e:
         logger.error(f"Error clearing context: {e}")
         return False
