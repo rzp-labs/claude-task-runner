@@ -154,19 +154,15 @@ python -m task_runner run --textual-dashboard [path/to/task_list.md]
 git clone https://github.com/grahama1970/claude_task_runner.git
 cd claude_task_runner
 
-# Create a virtual environment
-python -m venv .venv
+# Create a virtual environment with uv
+uv venv --python=3.10.11 .venv
 source .venv/bin/activate  # On Windows: .venv\Scripts\activate
 
 # Install the package
-pip install -e .
+uv pip install -e .
 ```
 
-For FastMCP integration, you'll need to install the `fastmcp` package:
-
-```bash
-pip install fastmcp
-```
+The installation includes all required dependencies, including FastMCP for integration with Claude and other AI agents.
 
 ### Basic Usage
 
@@ -174,21 +170,21 @@ pip install fastmcp
 2. **Create a project and parse tasks**:
    ```bash
    # Either using module syntax
-   python -m task_runner create my_project /path/to/task_list.md
+   python -m task_runner.cli.app create my_project /path/to/task_list.md
    # Or using the installed script
    task-runner create my_project /path/to/task_list.md
    ```
 3. **Run all tasks**:
    ```bash
    # Either using module syntax
-   python -m task_runner run --base-dir ~/claude_task_runner
+   python -m task_runner.cli.app run --base-dir ~/claude_task_runner
    # Or using the installed script
    task-runner run --base-dir ~/claude_task_runner
    ```
 4. **Check status**:
    ```bash
    # Either using module syntax
-   python -m task_runner status
+   python -m task_runner.cli.app status
    # Or using the installed script
    task-runner status
    ```
@@ -203,7 +199,7 @@ The CLI provides a comprehensive set of commands and options for managing Claude
 
 ```bash
 # Using module syntax
-python -m task_runner create <project_name> <task_list_file>
+python -m task_runner.cli.app create <project_name> <task_list_file>
 
 # Using installed script
 task-runner create <project_name> <task_list_file>
@@ -216,7 +212,7 @@ Parameters:
 Example:
 ```bash
 # Using module syntax
-python -m task_runner create my_project input/sample_tasks.md
+python -m task_runner.cli.app create my_project input/sample_tasks.md
 
 # Using installed script
 task-runner create my_project input/sample_tasks.md
@@ -226,13 +222,13 @@ task-runner create my_project input/sample_tasks.md
 
 ```bash
 # Using module syntax
-python -m task_runner run [options]
+python -m task_runner.cli.app run [options]
 
 # Using installed script
 task-runner run [options]
 
 # Using the Textual dashboard
-python -m task_runner textual [options]
+python -m task_runner.cli.app textual [options]
 # Or
 task-runner textual [options]
 
@@ -258,13 +254,13 @@ Options:
 Example with Textual dashboard and debugging:
 ```bash
 # Using module syntax
-python -m task_runner run input/sample_tasks.md --base-dir ./debug_project --textual-dashboard --debug-claude
+python -m task_runner.cli.app run input/sample_tasks.md --base-dir ./debug_project --textual-dashboard --debug-claude
 
 # Using installed script
 task-runner run input/sample_tasks.md --base-dir ./debug_project --textual-dashboard --debug-claude
 
 # Using the dedicated Textual command (same effect, cleaner interface)
-python -m task_runner textual input/sample_tasks.md --base-dir ./debug_project --debug-claude
+python -m task_runner.cli.app textual input/sample_tasks.md --base-dir ./debug_project --debug-claude
 
 # Or simplest option with the convenience script
 ./run_textual.sh input/sample_tasks.md
@@ -273,7 +269,7 @@ python -m task_runner textual input/sample_tasks.md --base-dir ./debug_project -
 Example with demo mode (no API usage):
 ```bash
 # Using module syntax
-python -m task_runner run --base-dir ./debug_project --quick-demo
+python -m task_runner.cli.app run --base-dir ./debug_project --quick-demo
 
 # Using installed script
 task-runner run --base-dir ./debug_project --quick-demo
@@ -282,7 +278,7 @@ task-runner run --base-dir ./debug_project --quick-demo
 Example with simple file redirection (faster, but no real-time output):
 ```bash
 # Using module syntax
-python -m task_runner run --base-dir ./debug_project --no-streaming
+python -m task_runner.cli.app run --base-dir ./debug_project --no-streaming
 
 # Using installed script
 task-runner run --base-dir ./debug_project --no-streaming
@@ -292,7 +288,7 @@ task-runner run --base-dir ./debug_project --no-streaming
 
 ```bash
 # Using module syntax
-python -m task_runner status [--base-dir PATH] [--json]
+python -m task_runner.cli.app status [--base-dir PATH] [--json]
 
 # Using installed script
 task-runner status [--base-dir PATH] [--json]
@@ -305,7 +301,7 @@ Options:
 Example:
 ```bash
 # Using module syntax
-python -m task_runner status --base-dir ./debug_project
+python -m task_runner.cli.app status --base-dir ./debug_project
 
 # Using installed script
 task-runner status --base-dir ./debug_project
@@ -315,7 +311,7 @@ task-runner status --base-dir ./debug_project
 
 ```bash
 # Using module syntax
-python -m task_runner clean [--base-dir PATH]
+python -m task_runner.cli.app clean [--base-dir PATH]
 
 # Using installed script
 task-runner clean [--base-dir PATH]
@@ -327,7 +323,7 @@ Options:
 Example:
 ```bash
 # Using module syntax
-python -m task_runner clean --base-dir ./debug_project
+python -m task_runner.cli.app clean --base-dir ./debug_project
 
 # Using installed script
 task-runner clean --base-dir ./debug_project

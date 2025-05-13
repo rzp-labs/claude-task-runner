@@ -102,9 +102,6 @@ def run(
     no_streaming: bool = typer.Option(
         False, "--no-streaming", help="Disable real-time output streaming (uses simple file redirection)"
     ),
-    raw_json: bool = typer.Option(
-        False, "--raw-json", help="Output raw JSON format instead of human-friendly text"
-    ),
     no_table_repeat: bool = typer.Option(
         False, "--no-table-repeat", help="Display the table only once, don't repeat after each task (better with streaming)"
     ),
@@ -163,9 +160,7 @@ def run(
                 timeout_seconds=timeout,
                 fast_mode=False,
                 demo_mode=quick_demo,
-                use_streaming=not no_streaming,
-                raw_json=raw_json,
-                quiet=True  # Always use quiet mode with JSON output
+                use_streaming=not no_streaming
             )
             print_json(results)
         else:
@@ -215,9 +210,7 @@ def run(
                     task_timeout, 
                     fast_mode=False, 
                     demo_mode=quick_demo, 
-                    use_streaming=not no_streaming,
-                    raw_json=raw_json,
-                    quiet=use_quiet
+                    use_streaming=not no_streaming
                 )
                 
                 # Always print a clear separator for task completion

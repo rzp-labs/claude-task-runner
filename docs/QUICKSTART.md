@@ -32,15 +32,15 @@ After installation, restart Claude Desktop and ensure you see the hammer icon in
    cd claude_task_runner
    ```
 
-2. **Set up a virtual environment**:
+2. **Set up a virtual environment with uv**:
    ```bash
-   python -m venv .venv
+   uv venv --python=3.10.11 .venv
    source .venv/bin/activate  # On Windows: .venv\Scripts\activate
    ```
 
 3. **Install the package**:
    ```bash
-   pip install -e .
+   uv pip install -e .
    ```
 
 ## Basic Commands
@@ -51,7 +51,7 @@ Here are the core commands you'll use with Claude Task Runner:
 
 ```bash
 # Using module syntax
-python -m task_runner create <project_name> <task_list_file>
+python -m task_runner.cli.app create <project_name> <task_list_file>
 
 # Using installed script (after pip install)
 task-runner create <project_name> <task_list_file>
@@ -70,7 +70,7 @@ python -m task_runner create my_project input/sample_tasks.md
 
 ```bash
 # Using module syntax
-python -m task_runner run [--base-dir <directory>] [--timeout <seconds>] [--quick-demo] [--debug-claude] [--no-streaming]
+python -m task_runner.cli.app run [--base-dir <directory>] [--timeout <seconds>] [--quick-demo] [--debug-claude] [--no-streaming]
 
 # Using installed script (after pip install)
 task-runner run [--base-dir <directory>] [--timeout <seconds>] [--quick-demo] [--debug-claude] [--no-streaming]
@@ -88,10 +88,10 @@ Parameters:
 Examples:
 ```bash
 # Run with real-time streaming output (default)
-python -m task_runner run input/sample_tasks.md --base-dir ./debug_project --debug-claude
+python -m task_runner.cli.app run input/sample_tasks.md --base-dir ./debug_project --debug-claude
 
 # Run with simple file redirection (faster, but no real-time output)
-python -m task_runner run input/sample_tasks.md --base-dir ./debug_project --no-streaming
+python -m task_runner.cli.app run input/sample_tasks.md --base-dir ./debug_project --no-streaming
 ```
 
 The first command:
@@ -109,7 +109,7 @@ The second command:
 
 ```bash
 # Using module syntax
-python -m task_runner status [--base-dir <directory>] [--json]
+python -m task_runner.cli.app status [--base-dir <directory>] [--json]
 
 # Using installed script (after pip install)
 task-runner status [--base-dir <directory>] [--json]
@@ -128,7 +128,7 @@ python -m task_runner status --base-dir ./debug_project
 
 ```bash
 # Using module syntax
-python -m task_runner clean [--base-dir <directory>]
+python -m task_runner.cli.app clean [--base-dir <directory>]
 
 # Using installed script (after pip install)
 task-runner clean [--base-dir <directory>]

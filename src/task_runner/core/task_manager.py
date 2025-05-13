@@ -283,14 +283,32 @@ class TaskManager:
             
         logger.info("Clearing Claude context")
         
-        # Use the dedicated function from claude_streamer
-        from task_runner.core.claude_streamer import clear_claude_context
-        return clear_claude_context(str(self.claude_path))
+        # Use echo to pipe /clear to Claude
+        cmd = f"echo '/clear' | {self.claude_path}"
+        
+        try:
+            process = subprocess.run(
+                cmd,
+                shell=True,
+                check=True,
+                stdout=subprocess.PIPE,
+                stderr=subprocess.PIPE,
+                timeout=10
+            )
+            
+            if process.returncode == 0:
+                logger.info("Claude context cleared successfully")
+                return True
+            else:
+                logger.warning(f"Context clearing failed: {process.stderr.decode()}")
+                return False
+        except Exception as e:
+            logger.error(f"Error clearing context: {e}")
+            return False
     
     def run_task(self, task_file: Path, timeout_seconds: int = 300, 
                  fast_mode: bool = True, demo_mode: bool = False,
-                 use_streaming: bool = True, raw_json: bool = False,
-                 quiet: bool = False) -> Tuple[bool, Dict[str, Any]]:
+                 use_streaming: bool = True) -> Tuple[bool, Dict[str, Any]]:
         """
         Run a single task with Claude using either streaming or simple file redirection
         
@@ -300,8 +318,6 @@ class TaskManager:
             fast_mode: Use --no-auth-check for faster execution
             demo_mode: Run in demo mode (simulate Claude output for testing)
             use_streaming: Whether to use real-time streaming output (True) or simple file redirection (False)
-            raw_json: Whether to output raw JSON instead of human-friendly format (only applies when use_streaming=True)
-            quiet: Whether to suppress console output (still writes to files, only applies when use_streaming=True)
             
         Returns:
             Tuple of (success, task_state)
@@ -441,81 +457,71 @@ class TaskManager:
             # Setup command args
             cmd_args = ["--no-auth-check"] if fast_mode else []
             
-            # Choose between streaming with pexpect or simple file redirection
-            logger.info(f"{'Using pexpect streaming approach' if use_streaming else 'Using simple file redirection'} for task: {task_name}")
+            # Both streaming and non-streaming approaches use simple shell redirection
+            # Difference is whether we use tee to mirror output to the console
+            logger.info(f"{'Using streaming approach' if use_streaming else 'Using simple file redirection'} for task: {task_name}")
+            
+            # Build the command with different options for streaming
+            if use_streaming:
+                # Use --verbose to show progress directly on console
+                cmd_parts = [str(self.claude_path), "--print", "--verbose"] + (["--no-auth-check"] if fast_mode else [])
+                cmd_str = ' '.join(cmd_parts)
+                # Command just redirects errors, stdout goes to both console and result file via script
+                cmd = f"script -q /dev/null {cmd_str} < {task_file} | tee {result_file} 2> {error_file}"
+                logger.info(f"Command with verbose streaming: {cmd}")
+            else:
+                # Simple file redirection (faster)
+                cmd_parts = [str(self.claude_path), "--print"] + (["--no-auth-check"] if fast_mode else [])
+                cmd_str = ' '.join(cmd_parts)
+                cmd = f"{cmd_str} < {task_file} > {result_file} 2> {error_file}"
+                logger.info(f"Command with redirection: {cmd}")
             
             try:
-                if use_streaming:
-                    # Use pexpect for real-time interactive streaming
-                    logger.info("Using pexpect for interactive streaming")
-                    from task_runner.core.claude_streamer import stream_claude_output
-                    
-                    streaming_result = stream_claude_output(
-                        task_file=str(task_file),
-                        result_file=str(result_file),
-                        error_file=str(error_file),
-                        claude_path=str(self.claude_path),
-                        cmd_args=cmd_args,
-                        timeout_seconds=timeout_seconds,
-                        raw_json=raw_json,
-                        quiet=quiet
-                    )
-                    
-                    # Get execution time and exit code from the result
-                    execution_time = streaming_result.get("execution_time", time.time() - start_time)
-                    exit_code = streaming_result.get("exit_code", 1)  # Default to error if not present
-                else:
-                    # Simple file redirection (faster but no real-time output)
-                    cmd_parts = [str(self.claude_path), "--print"] + cmd_args
-                    cmd = f"{' '.join(cmd_parts)} < {task_file} > {result_file} 2> {error_file}"
-                    logger.info(f"Command with redirection: {cmd}")
-                    
-                    try:
-                        # Run the command with timeout
-                        process = subprocess.run(
-                            cmd,
-                            shell=True,
-                            timeout=timeout_seconds,
-                            check=False
-                        )
-                        
-                        # Process completed
-                        execution_time = time.time() - start_time
-                        exit_code = process.returncode
-                        
-                        # Check result
-                        logger.info(f"Command completed with exit code {exit_code} in {execution_time:.2f}s")
-                        
-                        # Result structure 
-                        streaming_result = {
-                            "task_file": str(task_file),
-                            "result_file": str(result_file),
-                            "error_file": str(error_file),
-                            "exit_code": exit_code,
-                            "execution_time": execution_time,
-                            "success": exit_code == 0,
-                            "status": "completed" if exit_code == 0 else "failed"
-                        }
-                    except subprocess.TimeoutExpired:
-                        # Handle timeout for non-streaming mode
-                        logger.warning(f"Command timed out after {timeout_seconds}s")
-                        execution_time = time.time() - start_time
-                        exit_code = -1
-                        
-                        # Add timeout message to result file
-                        with open(result_file, "a") as f:
-                            f.write(f"\n\n[TIMEOUT: Claude process was terminated after {timeout_seconds}s]")
-                        
-                        streaming_result = {
-                            "task_file": str(task_file),
-                            "result_file": str(result_file),
-                            "error_file": str(error_file),
-                            "exit_code": exit_code,
-                            "execution_time": execution_time,
-                            "success": False,
-                            "status": "timeout"
-                        }
-                        exit_code = -1
+                # Run the command with timeout
+                process = subprocess.run(
+                    cmd,
+                    shell=True,
+                    timeout=timeout_seconds,
+                    check=False
+                )
+                
+                # Process completed
+                execution_time = time.time() - start_time
+                exit_code = process.returncode
+                
+                # Check result
+                logger.info(f"Command completed with exit code {exit_code} in {execution_time:.2f}s")
+                
+                # Result structure 
+                streaming_result = {
+                    "task_file": str(task_file),
+                    "result_file": str(result_file),
+                    "error_file": str(error_file),
+                    "exit_code": exit_code,
+                    "execution_time": execution_time,
+                    "success": exit_code == 0,
+                    "status": "completed" if exit_code == 0 else "failed"
+                }
+                
+            except subprocess.TimeoutExpired:
+                # Handle timeout
+                execution_time = time.time() - start_time
+                logger.warning(f"Command timed out after {timeout_seconds}s")
+                
+                # Add timeout message to result file
+                with open(result_file, "a") as f:
+                    f.write(f"\n\n[TIMEOUT: Claude process was terminated after {timeout_seconds}s]")
+                
+                streaming_result = {
+                    "task_file": str(task_file),
+                    "result_file": str(result_file),
+                    "error_file": str(error_file),
+                    "exit_code": -1,  # Use -1 for timeout
+                    "execution_time": execution_time,
+                    "success": False,
+                    "status": "timeout"
+                }
+                exit_code = -1
                 
             except Exception as e:
                 # Handle other errors
@@ -599,8 +605,7 @@ class TaskManager:
     
     def run_all_tasks(self, timeout_seconds: int = 300, 
                      fast_mode: bool = True, demo_mode: bool = False,
-                     use_streaming: bool = True, raw_json: bool = False,
-                     quiet: bool = False) -> Dict[str, Any]:
+                     use_streaming: bool = True) -> Dict[str, Any]:
         """
         Run all tasks in the tasks directory
         
@@ -609,8 +614,6 @@ class TaskManager:
             fast_mode: Use --no-auth-check for faster execution  
             demo_mode: Run in demo mode (simulate Claude output for testing)
             use_streaming: Whether to use real-time streaming output (True) or simple file redirection (False)
-            raw_json: Whether to output raw JSON instead of human-friendly format (only applies when use_streaming=True)
-            quiet: Whether to suppress console output (still writes to files, only applies when use_streaming=True)
             
         Returns:
             Summary of execution results
@@ -657,9 +660,7 @@ class TaskManager:
                 timeout_seconds=timeout_seconds,
                 fast_mode=fast_mode,
                 demo_mode=demo_mode,
-                use_streaming=use_streaming,
-                raw_json=raw_json,
-                quiet=quiet
+                use_streaming=use_streaming
             )
             
             results["task_results"][task_name] = task_result

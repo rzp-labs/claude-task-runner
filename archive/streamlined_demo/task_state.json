@@ -1,0 +1,20 @@
+{
+  "001_first_task": {
+    "name": "001_first_task",
+    "status": "failed",
+    "created_at": "2025-05-13T17:31:04.780639",
+    "updated_at": "2025-05-13T17:31:04.797337",
+    "started_at": "2025-05-13T17:31:04.780620",
+    "completed_at": "2025-05-13T17:31:04.797320",
+    "error": "local variable 'exit_code' referenced before assignment"
+  },
+  "002_second_task": {
+    "name": "002_second_task",
+    "status": "failed",
+    "created_at": "2025-05-13T17:31:05.305331",
+    "updated_at": "2025-05-13T17:31:05.308698",
+    "started_at": "2025-05-13T17:31:05.305315",
+    "completed_at": "2025-05-13T17:31:05.308686",
+    "error": "local variable 'exit_code' referenced before assignment"
+  }
+}

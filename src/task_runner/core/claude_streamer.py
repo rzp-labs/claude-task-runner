@@ -3,8 +3,8 @@
 Claude Streamer Module for Task Runner
 
 This module provides functions for running Claude with real-time output streaming,
-enabling visibility into Claude's progress during task execution. It uses pexpect
-for reliable interactive terminal management and streaming of Claude's output.
+enabling visibility into Claude's progress during task execution. It uses Claude's
+native streaming capabilities for reliable output display.
 
 Sample Input:
 - Task file path: "/path/to/task.md"
@@ -29,8 +29,8 @@ Sample Output:
 
 Links:
 - Claude CLI: https://github.com/anthropics/anthropic-cli
-- Pexpect Documentation: https://pexpect.readthedocs.io/
 - Loguru Documentation: https://loguru.readthedocs.io/
+- Python subprocess: https://docs.python.org/3/library/subprocess.html
 """
 
 import sys
@@ -38,12 +38,10 @@ import time
 import subprocess
 import os
 import tempfile
-import signal
 import json
 from pathlib import Path
 from typing import Dict, List, Any, Optional, TextIO
 
-import pexpect
 from loguru import logger
 
 
@@ -78,11 +76,11 @@ def stream_claude_output(
     claude_path: Optional[str] = None,
     cmd_args: Optional[List[str]] = None,
     timeout_seconds: int = 300,
-    raw_json: bool = False,  # Whether to output raw JSON instead of human-friendly format
-    quiet: bool = False      # Whether to suppress console output (still writes to files)
+    raw_json: bool = False,
+    quiet: bool = False
 ) -> Dict[str, Any]:
     """
-    Run Claude on a task file and stream its output in real-time using pexpect.
+    Run Claude on a task file and stream its output in real-time.
     
     Args:
         task_file: Path to the task file
@@ -92,7 +90,7 @@ def stream_claude_output(
         cmd_args: Additional command-line arguments for Claude
         timeout_seconds: Maximum execution time in seconds
         raw_json: Whether to output raw JSON instead of human-friendly format
-        quiet: Whether to suppress console output (still writes to files)
+        quiet: Whether to suppress console output during execution
         
     Returns:
         Dictionary with execution results including success status, time taken, and file paths
@@ -117,307 +115,144 @@ def stream_claude_output(
     if claude_path is None:
         claude_path = find_claude_path()
     
-    # Initialize command args and add print flag
+    # Initialize command args and add appropriate flags
     if cmd_args is None:
         cmd_args = []
     
-    cmd_args = ["--print", "--verbose"] + cmd_args
+    # Add either --print or --json flag based on raw_json setting
+    if raw_json:
+        cmd_args = ["--json"] + cmd_args
+    else:
+        cmd_args = ["--print"] + cmd_args
     
-    logger.info(f"Task file: {task_file}")
-    logger.info(f"Result will be saved to: {result_file}")
+    if not quiet:
+        logger.info(f"Task file: {task_file}")
+        logger.info(f"Result will be saved to: {result_file}")
     
-    # Start the process with pexpect
+    # Start the process - using direct subprocess approach instead of named pipes
     start_time = time.time()
     
     try:
-        # Build Claude command
+        # Build command with direct input/output
         cmd = [claude_path] + cmd_args
-        cmd_str = ' '.join(cmd)
-        logger.info(f"Running command: {cmd_str}")
+        if not quiet:
+            logger.info(f"Running command: {' '.join(cmd)}")
         
-        # Open result file for writing
-        with open(result_file, 'w') as result_output, open(error_file, 'w') as error_output:
-            # Create a more persistent temporary file for the command
-            # We'll handle cleanup in a way that ensures the file exists while needed
-            temp_dir = tempfile.gettempdir()
-            cmd_file_path = os.path.join(temp_dir, f"claude_cmd_{int(time.time())}.sh")
+        # Open files for reading/writing
+        with open(task_file, 'r') as input_file, \
+             open(result_file, 'w') as result_output, \
+             open(error_file, 'w') as error_output:
             
-            try:
-                # Write the command directly to the file
-                with open(cmd_file_path, 'w') as cmd_file:
-                    # Build the basic command with output format
-                    cmd_file.write("#!/bin/bash\n")
-                    cmd_file.write(f"{claude_path} --print --verbose --output-format stream-json ")
-                    
-                    # Add any additional command arguments
-                    if cmd_args:
-                        cmd_file.write(f"{' '.join(cmd_args)} ")
-                    
-                    # Add input redirection from the task file
-                    cmd_file.write(f"< {task_file}")
-                
-                # Make the command file executable
-                os.chmod(cmd_file_path, 0o755)
-                
-                logger.info(f"Created command file at {cmd_file_path}")
-                
-                # Verify the file exists before executing
-                if not os.path.exists(cmd_file_path):
-                    raise FileNotFoundError(f"Command file not found at {cmd_file_path}")
-                
-                # Spawn the process using the command file
-                logger.info(f"Executing command via {cmd_file_path}")
-                child = pexpect.spawn(
-                    cmd_file_path,
-                    encoding='utf-8',
-                    timeout=timeout_seconds,
-                    # Ensure window size is large enough for Claude's output
-                    dimensions=(80, 200)
-                )
-                
-                # IMPORTANT: We'll clean up the file later, after the command starts running
-                
-            except Exception as e:
-                # If anything fails during setup, clean up the file
-                logger.error(f"Error preparing command: {e}")
-                try:
-                    if os.path.exists(cmd_file_path):
-                        os.unlink(cmd_file_path)
-                except Exception as cleanup_error:
-                    logger.warning(f"Failed to clean up command file: {cleanup_error}")
-                raise
+            # Start Claude process with piped stdout to capture output directly
+            process = subprocess.Popen(
+                cmd,
+                stdin=input_file,
+                stdout=subprocess.PIPE,
+                stderr=error_output,
+                text=True,
+                bufsize=1  # Line buffered mode
+            )
             
-            # Only send output to stdout if not in quiet mode
             if not quiet:
-                # Use sys.stdout for real-time output
-                child.logfile_read = sys.stdout
-            
-            # Make sure we're capturing all output
-            child.logfile = result_output
-            child.logfile_send = error_output
-            
-            # Set up timeout monitoring
-            elapsed = 0
+                logger.info("Starting to stream Claude's output...")
             last_output_time = time.time()
-            logger.info("Started streaming Claude's output...")
             
-            # Initialize variables to track outcome
-            timed_out = False
-            exit_code = 0
-            
-            # Keep checking for output until process completes
+            # Read from process stdout in real-time
             while True:
-                try:
-                    # Wait for any output with a 1-second timeout (allows interruption check)
-                    patterns = [pexpect.TIMEOUT, pexpect.EOF, '\r\n']
-                    index = child.expect(patterns, timeout=1)
-                    
-                    if index == 0:  # TIMEOUT - No output in the last 1 second
-                        # Check if we've exceeded the total timeout
-                        elapsed = time.time() - start_time
-                        if elapsed > timeout_seconds:
-                            logger.warning(f"Claude process timed out after {timeout_seconds}s")
-                            timed_out = True
-                            exit_code = -1
-                            
-                            # Add timeout message to result file
-                            result_output.write(f"\n\n[TIMEOUT: Claude process was terminated after {timeout_seconds}s]")
-                            result_output.flush()
-                            
-                            # Kill the process
-                            child.kill(signal.SIGTERM)
-                            break
-                        
-                        # Check if we should log silent period
-                        if time.time() - last_output_time > 10:
-                            logger.info(f"Claude has been silent for {int(time.time() - last_output_time)}s")
-                            last_output_time = time.time()  # Reset to avoid spamming
-                        
-                    elif index == 1:  # EOF - Process completed
-                        logger.info("Claude process completed")
-                        break
-                        
-                    elif index == 2:  # Got a line of output
-                        # Get the raw output line
-                        line = child.before
-                        if line:
-                            line = line.strip()
-                            
-                        # Reset timeout trackers since we got output
-                        last_output_time = time.time()
-                        
-                        # Skip empty lines
-                        if not line:
-                            continue
-                            
-                        # Try to parse as JSON if it starts with a brace
-                        if line.startswith('{'):
-                            try:
-                                # Parse the JSON output from Claude's stream-json format
-                                logger.debug(f"Processing JSON line: {line[:100]}...")
-                                data = json.loads(line)
-                                # Log the basic structure
-                                logger.debug(f"JSON keys: {', '.join(data.keys())}")
-                                
-                                # If raw_json is True, write the raw JSON to the output file
-                                if raw_json:
-                                    # Use pretty formatting to make it more readable
-                                    pretty_json = json.dumps(data, indent=2)
-                                    result_output.write(pretty_json + "\n")
-                                    result_output.flush()
-                                    logger.info(f"Claude JSON: {line[:80]}...")
-                                    continue  # Skip further processing
-                                
-                                # Extract content if available
-                                if 'content' in data:
-                                    content = data['content']
-                                    # Handle both string and list content formats
-                                    if isinstance(content, str):
-                                        if content and content.strip():
-                                            # Write to result file (plain text)
-                                            result_output.write(content)
-                                            result_output.flush()
-                                            # Log nicely formatted content
-                                            logger.info(f"Claude: {content.strip()}")
-                                    elif isinstance(content, list):
-                                        # Content is a list of content blocks (new format)
-                                        # For the result file, we'll create a human-friendly version
-                                        for block in content:
-                                            if isinstance(block, dict) and 'text' in block and block.get('type') == 'text':
-                                                text = block['text']
-                                                if text and text.strip():
-                                                    # Write to result file (plain text)
-                                                    result_output.write(text)
-                                                    result_output.flush()
-                                                    # Log nicely formatted content
-                                                    logger.info(f"Claude: {text.strip()}")
-                                            elif isinstance(block, dict) and block.get('type') == 'tool_use':
-                                                # Format tool use in a more human-readable way
-                                                tool_name = block.get('name', 'unknown')
-                                                tool_input = block.get('input', {})
-                                                
-                                                # Create a human-readable description of the tool use
-                                                if tool_name == "Task":
-                                                    # Special formatting for Task tool
-                                                    description = tool_input.get('description', 'No description')
-                                                    prompt = tool_input.get('prompt', 'No prompt')
-                                                    tool_info = f"\n--- Claude is completing task: {description} ---\n"
-                                                    logger.info(f"Claude starting task: {description}")
-                                                else:
-                                                    # General formatting for other tools
-                                                    tool_info = f"\n--- Claude is using tool: {tool_name} ---\n"
-                                                    # Format the input parameters nicely
-                                                    for key, value in tool_input.items():
-                                                        tool_info += f"  - {key}: {value}\n"
-                                                    logger.info(f"Claude using tool: {tool_name}")
-                                                
-                                                # Write to result file in a human-readable format
-                                                result_output.write(tool_info)
-                                                result_output.flush()
-                                                
-                                            elif isinstance(block, dict) and block.get('type') == 'image':
-                                                # Handle image blocks
-                                                image_info = "\n[Image content not shown in text output]\n"
-                                                result_output.write(image_info)
-                                                result_output.flush()
-                                                logger.info("Claude included an image in response")
-                                            
-                                    # Store the original JSON in debug log for reference
-                                    logger.debug(f"Content structure: {type(content)} - {str(content)[:100]}...")
-                                
-                                # Extract completion info if available
-                                elif 'completion_id' in data:
-                                    logger.info(f"Completion ID: {data['completion_id']}")
-                                
-                                # Extract error info if available    
-                                elif 'error' in data:
-                                    error_msg = data['error'].get('message', 'Unknown error')
-                                    logger.error(f"Claude error: {error_msg}")
-                                    error_output.write(f"Error: {error_msg}\n")
-                                    error_output.flush()
-                            
-                            except json.JSONDecodeError:
-                                # Not valid JSON, just log the raw line
-                                if '[ERROR]' in line:
-                                    logger.error(f"Claude error: {line}")
-                                    error_output.write(f"{line}\n")
-                                    error_output.flush()
-                                else:
-                                    # Regular output line
-                                    logger.info(f"Claude output: {line}")
-                                    result_output.write(f"{line}\n")
-                                    result_output.flush()
-                        else:
-                            # Not JSON, write to appropriate output
-                            if '[ERROR]' in line:
-                                logger.error(f"Claude error: {line}")
-                                error_output.write(f"{line}\n")
-                                error_output.flush()
-                            else:
-                                # Regular output line
-                                logger.info(f"Claude output: {line}")
-                                result_output.write(f"{line}\n")
-                                result_output.flush()
-                    
-                except KeyboardInterrupt:
-                    logger.warning("Process interrupted by user")
-                    child.kill(signal.SIGTERM)
-                    exit_code = 130  # Standard exit code for SIGINT
+                # Check if process is still running or if we're done reading output
+                if process.poll() is not None and not process.stdout.readable():
+                    logger.info(f"Claude process completed with exit code {process.returncode}")
                     break
-                except Exception as e:
-                    logger.error(f"Error during pexpect monitoring: {e}")
-                    # Try to kill the process
+                
+                # Check for timeout
+                elapsed = time.time() - start_time
+                if elapsed > timeout_seconds:
+                    logger.warning(f"Claude process timed out after {timeout_seconds}s")
                     try:
-                        child.kill(signal.SIGTERM)
+                        process.terminate()
+                        logger.info(f"Terminated Claude process")
                     except:
                         pass
-                    exit_code = 1
-                    break
+                        
+                    # Add timeout notice to result file
+                    result_output.write(f"\n\n[TIMEOUT: Claude process was terminated after {timeout_seconds}s]")
+                    result_output.flush()
+                    return {
+                        "task_file": task_file,
+                        "result_file": result_file,
+                        "error_file": error_file,
+                        "exit_code": -1,  # Use -1 for timeout
+                        "execution_time": elapsed,
+                        "success": False,
+                        "status": "timeout",
+                        "result_size": result_path.stat().st_size if result_path.exists() else 0
+                    }
+                
+                # Read a line (non-blocking)
+                line = process.stdout.readline()
+                
+                if line:
+                    # Got output, write to result file
+                    result_output.write(line)
+                    result_output.flush()
+                    
+                    # Display to console if not in quiet mode
+                    if not quiet:
+                        display_line = line.strip()
+                        if display_line:
+                            if len(display_line) > 100:
+                                display_line = display_line[:100] + "..."
+                            logger.info(f"Claude: {display_line}")
+                    
+                    last_output_time = time.time()
+                else:
+                    # No output available right now
+                    
+                    # Check if process has ended
+                    if process.poll() is not None:
+                        break
+                    
+                    # Check if we've been silent for too long (but not timed out yet)
+                    if not quiet and time.time() - last_output_time > 10:
+                        logger.info(f"Claude has been silent for {int(time.time() - last_output_time)}s")
+                        last_output_time = time.time()  # Reset to avoid spamming
+                    
+                    # Small pause before trying again
+                    time.sleep(0.1)
             
-            # Wait for process to fully terminate
-            try:
-                child.close()
-                # Get the exit code if available
-                if not timed_out and child.exitstatus is not None:
-                    exit_code = child.exitstatus
-            except:
-                pass
-            
-            # Clean up the command file now that the process has completed
-            try:
-                if os.path.exists(cmd_file_path):
-                    os.unlink(cmd_file_path)
-                    logger.info(f"Removed temporary command file: {cmd_file_path}")
-            except Exception as cleanup_error:
-                logger.warning(f"Failed to clean up command file: {cleanup_error}")
+            # Process completed - make sure we get the exit code
+            if process.poll() is None:
+                process.wait()
             
             execution_time = time.time() - start_time
+            exit_code = process.returncode
             
-            # Log completion
-            if exit_code == 0:
-                logger.success(f"Claude completed successfully in {execution_time:.2f} seconds")
+            # Log completion if not in quiet mode
+            if not quiet:
+                if exit_code == 0:
+                    logger.success(f"Claude completed successfully in {execution_time:.2f} seconds")
+                    
+                    # Show summary of output file
+                    if result_path.exists():
+                        file_size = result_path.stat().st_size
+                        logger.info(f"Result file size: {file_size} bytes")
+                else:
+                    logger.error(f"Claude process failed with exit code {exit_code}")
                 
-                # Show summary of output file
-                if result_path.exists():
-                    file_size = result_path.stat().st_size
-                    logger.info(f"Result file size: {file_size} bytes")
-            else:
-                logger.error(f"Claude process failed with exit code {exit_code}")
-                
-                # Check for specific error conditions
-                if result_path.exists() and result_path.stat().st_size > 0:
+                # Check for specific error conditions if not in quiet mode
+                error_content = ""
+                if not quiet and result_path.exists() and result_path.stat().st_size > 0:
                     with open(result_file, "r") as f:
                         result_content = f.read(500)
                         if "usage limit reached" in result_content.lower():
                             logger.error("CLAUDE USAGE LIMIT REACHED - Your account has reached its quota")
+                            logger.error("Consider waiting until your quota resets or upgrading your Claude plan")
                 
-                # Show error output
-                if error_path.exists() and error_path.stat().st_size > 0:
+                # Show error output if not in quiet mode
+                if not quiet and error_path.exists() and error_path.stat().st_size > 0:
                     with open(error_file, "r") as f:
                         error_content = f.read(500)
                         logger.error(f"Error output: {error_content}")
-            
-            status = "timeout" if timed_out else ("completed" if exit_code == 0 else "failed")
             
             return {
                 "task_file": task_file,
@@ -426,12 +261,21 @@ def stream_claude_output(
                 "exit_code": exit_code,
                 "execution_time": execution_time,
                 "success": exit_code == 0,
-                "status": status,
+                "status": "completed" if exit_code == 0 else "failed",
                 "result_size": result_path.stat().st_size if result_path.exists() else 0
             }
         
     except Exception as e:
-        logger.exception(f"Error streaming Claude output: {e}")
+        if not quiet:
+            logger.exception(f"Error streaming Claude output: {e}")
+        
+        # Check if process is still running and terminate if needed
+        if 'process' in locals() and process.poll() is None:
+            process.terminate()
+            try:
+                process.wait(timeout=5)
+            except subprocess.TimeoutExpired:
+                process.kill()
         
         execution_time = time.time() - start_time if 'start_time' in locals() else 0
         
@@ -441,7 +285,7 @@ def stream_claude_output(
             "error_file": error_file,
             "success": False,
             "error": str(e),
-            "exit_code": -1,
+            "exit_code": -1 if 'process' not in locals() else (process.returncode or -1),
             "execution_time": execution_time,
             "status": "error",
             "result_size": result_path.stat().st_size if result_path.exists() else 0
@@ -463,54 +307,25 @@ def clear_claude_context(claude_path: Optional[str] = None) -> bool:
     
     logger.info("Clearing Claude context...")
     
+    # Use echo to pipe /clear to Claude
+    cmd = f"echo '/clear' | {claude_path}"
+    
     try:
-        # Create a more persistent temporary file for the command
-        temp_dir = tempfile.gettempdir()
-        cmd_file_path = os.path.join(temp_dir, f"claude_clear_{int(time.time())}.sh")
+        process = subprocess.run(
+            cmd,
+            shell=True,
+            check=True,
+            stdout=subprocess.PIPE,
+            stderr=subprocess.PIPE,
+            timeout=10
+        )
         
-        # Write the command to the file
-        with open(cmd_file_path, 'w') as cmd_file:
-            cmd_file.write("#!/bin/bash\n")
-            cmd_file.write(f"echo '/clear' | {claude_path}")
-        
-        # Make the file executable
-        os.chmod(cmd_file_path, 0o755)
-        
-        # Verify the file exists
-        if not os.path.exists(cmd_file_path):
-            logger.error(f"Clear command file not found at {cmd_file_path}")
+        if process.returncode == 0:
+            logger.info("Claude context cleared successfully")
+            return True
+        else:
+            logger.warning(f"Context clearing failed: {process.stderr.decode()}")
             return False
-            
-        logger.info(f"Created clear command file at {cmd_file_path}")
-        
-        success = False
-        try:
-            # Use pexpect to run the command
-            child = pexpect.spawn(cmd_file_path, encoding='utf-8', timeout=10)
-            
-            # Look for confirmation message or prompt
-            patterns = [pexpect.TIMEOUT, pexpect.EOF, "Context cleared"]
-            index = child.expect(patterns, timeout=5)
-            
-            success = index == 2 or index == 1  # Success if we see "Context cleared" or EOF
-            
-            # Close the process
-            child.close(force=True)
-            
-            if success:
-                logger.info("Claude context cleared successfully")
-            else:
-                logger.warning("Context clearing failed - no confirmation received")
-        finally:
-            # Clean up the temporary file after execution
-            try:
-                if os.path.exists(cmd_file_path):
-                    os.unlink(cmd_file_path)
-                    logger.info(f"Removed temporary clear command file: {cmd_file_path}")
-            except Exception as cleanup_error:
-                logger.warning(f"Failed to clean up clear command file: {cleanup_error}")
-                
-        return success
     except Exception as e:
         logger.error(f"Error clearing context: {e}")
         return False
@@ -521,7 +336,9 @@ def run_claude_tasks(
     clear_context: bool = True,
     claude_path: Optional[str] = None,
     cmd_args: Optional[List[str]] = None,
-    timeout_seconds: int = 300
+    timeout_seconds: int = 300,
+    raw_json: bool = False,
+    quiet: bool = False
 ) -> Dict[str, Any]:
     """
     Run multiple Claude tasks in sequence with streaming output.
@@ -532,19 +349,23 @@ def run_claude_tasks(
         claude_path: Path to Claude executable (found automatically if None)
         cmd_args: Additional command arguments for Claude
         timeout_seconds: Maximum execution time per task in seconds
+        raw_json: Whether to output raw JSON instead of human-friendly format
+        quiet: Whether to suppress console output during execution
         
     Returns:
         Dictionary with execution results for all tasks
     """
     if not task_files:
-        logger.warning("No task files provided")
+        if not quiet:
+            logger.warning("No task files provided")
         return {"success": False, "error": "No task files provided"}
     
     # Find Claude executable if not provided
     if claude_path is None:
         claude_path = find_claude_path()
     
-    logger.info(f"Using Claude at: {claude_path}")
+    if not quiet:
+        logger.info(f"Using Claude at: {claude_path}")
     
     # Initialize command args
     if cmd_args is None:
@@ -555,7 +376,8 @@ def run_claude_tasks(
     
     for i, task_file in enumerate(task_files):
         if not os.path.exists(task_file):
-            logger.error(f"Task file not found: {task_file}")
+            if not quiet:
+                logger.error(f"Task file not found: {task_file}")
             results.append({
                 "task_file": task_file,
                 "success": False,
@@ -564,12 +386,15 @@ def run_claude_tasks(
             continue
         
         # Run the task with streaming output
-        logger.info(f"Running task {i+1}/{len(task_files)}: {task_file}")
+        if not quiet:
+            logger.info(f"Running task {i+1}/{len(task_files)}: {task_file}")
         task_result = stream_claude_output(
             task_file=task_file,
             claude_path=claude_path,
             cmd_args=cmd_args,
-            timeout_seconds=timeout_seconds
+            timeout_seconds=timeout_seconds,
+            raw_json=raw_json,
+            quiet=quiet
         )
         results.append(task_result)
         
@@ -582,14 +407,15 @@ def run_claude_tasks(
     # Calculate summary
     successful = sum(1 for r in results if r.get("success", False))
     
-    logger.info("=" * 50)
-    logger.info("EXECUTION SUMMARY")
-    logger.info("=" * 50)
-    logger.info(f"Total tasks: {len(task_files)}")
-    logger.info(f"Successful: {successful}")
-    logger.info(f"Failed: {len(task_files) - successful}")
-    logger.info(f"Total time: {total_time:.2f} seconds")
-    logger.info(f"Average time per task: {total_time/max(1, len(task_files)):.2f} seconds")
+    if not quiet:
+        logger.info("=" * 50)
+        logger.info("EXECUTION SUMMARY")
+        logger.info("=" * 50)
+        logger.info(f"Total tasks: {len(task_files)}")
+        logger.info(f"Successful: {successful}")
+        logger.info(f"Failed: {len(task_files) - successful}")
+        logger.info(f"Total time: {total_time:.2f} seconds")
+        logger.info(f"Average time per task: {total_time/max(1, len(task_files)):.2f} seconds")
     
     return {
         "results": results,
