@@ -48,13 +48,14 @@ flowchart TD
     ResultsFiles["📄 Results Files"]:::storageNode
     
     %% The actual workflow in 6 steps - vertical layout
-    User -->|"1. Creates"| TaskList
-    TaskList -->|"2. Breaks down into"| TaskFiles
-    TaskFiles -->|"3. Iterates over each"| TaskRunner
-    TaskRunner -->|"4. Updates"| Dashboard
-    TaskRunner -->|"5. Sends task to"| ClaudeCode
+    User -->|"Creates"| TaskList
+    TaskList -->|"Breaks down into"| TaskFiles
+    TaskFiles -->|"Iterates over each"| TaskRunner
+    TaskRunner -->|"Updates"| Dashboard
+    TaskRunner -->|"Sends task to"| ClaudeCode
     ClaudeCode -->|"Results & /clear"| ResultsFiles
-    ResultsFiles -->|"6. Completes task & updates dashboard"| TaskRunner
+    ResultsFiles -->|"Completes task & updates"| TaskRunner
+
     
     %% Loop back for next task
     TaskRunner -.->|"Repeats for next task"| TaskFiles
@@ -101,6 +102,10 @@ After installation, restart Claude Desktop and ensure you see the hammer icon in
 - **Execution Control**: Run tasks individually or in sequence, with result management
 - **Status Tracking**: Monitor project progress and task completion status
 - **Modern CLI**: Intuitive command-line interface with rich formatting
+- **Multiple Dashboard Options**: 
+  - Modern Textual-based interactive dashboard UI with fixed header and scrolling output area
+  - Real-time task status with color-coded indicators
+  - Markdown rendering for Claude output with proper formatting
 - **MCP Integration**: Seamless integration with agent workflows via FastMCP
 - **Performance Optimization**: Shell redirection for fastest Claude execution
 - **Real-time Streaming**: See Claude's output as it's being generated
@@ -116,6 +121,30 @@ The latest version of Claude Task Runner features significant performance improv
 - **Named Pipes**: Uses FIFO pipes for efficient streaming of Claude's output
 - **Simplified Processing**: Streamlined execution flow without unnecessary overhead
 - **Customizable Pooling**: Configure process pooling to balance performance and resource usage
+
+## Textual Dashboard
+
+The Textual dashboard provides a modern terminal user interface (TUI) with:
+
+- **Fixed Task Status Panel**: A DataTable showing all tasks with their current status, progress, and timing information
+- **Streaming Output Area**: A scrollable area showing Claude's output in real-time with markdown rendering
+- **Keyboard Navigation**: Simple keyboard shortcuts (q to quit, etc.)
+- **Color-Coded Status**: Visual indicators of task status (running, completed, failed, etc.)
+- **Auto-Scrolling**: Output automatically scrolls to show the latest content
+- **Responsive Layout**: Adapts to terminal size for optimal viewing
+
+To use the Textual dashboard:
+
+```bash
+# Using the dedicated textual command (recommended)
+python -m task_runner textual [path/to/task_list.md]
+
+# Or using the run command with textual dashboard option
+python -m task_runner run --textual-dashboard [path/to/task_list.md]
+
+# Or using the convenience script
+./run_textual.sh [path/to/task_list.md]
+```
 
 ## Quick Start
 
@@ -202,6 +231,14 @@ python -m task_runner run [options]
 
 # Using installed script
 task-runner run [options]
+
+# Using the Textual dashboard
+python -m task_runner textual [options]
+# Or
+task-runner textual [options]
+
+# Simpler option for Textual dashboard
+./run_textual.sh [path/to/task_list.md]
 ```
 
 Options:
@@ -215,14 +252,23 @@ Options:
 - `--reuse-context`: Reuse Claude processes with /clear between tasks (default: True)
 - `--no-streaming`: Disable real-time output streaming (uses simple file redirection)
 - `--json`: Output results as JSON
+- `--textual-dashboard`: Use the modern Textual-based dashboard UI
+- `--use-dashboard`: Use the interactive Rich dashboard UI
+- `--fixed-dashboard/--no-fixed-dashboard`: Enable/disable the fixed dashboard UI (enabled by default)
 
-Example with debugging enabled:
+Example with Textual dashboard and debugging:
 ```bash
 # Using module syntax
-python -m task_runner run input/sample_tasks.md --base-dir ./debug_project --debug-claude
+python -m task_runner run input/sample_tasks.md --base-dir ./debug_project --textual-dashboard --debug-claude
 
 # Using installed script
-task-runner run input/sample_tasks.md --base-dir ./debug_project --debug-claude
+task-runner run input/sample_tasks.md --base-dir ./debug_project --textual-dashboard --debug-claude
+
+# Using the dedicated Textual command (same effect, cleaner interface)
+python -m task_runner textual input/sample_tasks.md --base-dir ./debug_project --debug-claude
+
+# Or simplest option with the convenience script
+./run_textual.sh input/sample_tasks.md
 ```
 
 Example with demo mode (no API usage):
