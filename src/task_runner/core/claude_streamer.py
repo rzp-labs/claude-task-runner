@@ -248,17 +248,40 @@ def stream_claude_output(
                         if line.startswith('{'):
                             try:
                                 # Parse the JSON output from Claude's stream-json format
+                                logger.debug(f"Processing JSON line: {line[:100]}...")
                                 data = json.loads(line)
+                                # Log the basic structure
+                                logger.debug(f"JSON keys: {', '.join(data.keys())}")
                                 
                                 # Extract content if available
                                 if 'content' in data:
                                     content = data['content']
-                                    if content and content.strip():
-                                        # Write to result file
-                                        result_output.write(content)
-                                        result_output.flush()
-                                        # Log nicely formatted content
-                                        logger.info(f"Claude: {content.strip()}")
+                                    # Handle both string and list content formats
+                                    if isinstance(content, str):
+                                        if content and content.strip():
+                                            # Write to result file
+                                            result_output.write(content)
+                                            result_output.flush()
+                                            # Log nicely formatted content
+                                            logger.info(f"Claude: {content.strip()}")
+                                    elif isinstance(content, list):
+                                        # Content is a list of content blocks (new format)
+                                        for block in content:
+                                            if isinstance(block, dict) and 'text' in block and block.get('type') == 'text':
+                                                text = block['text']
+                                                if text and text.strip():
+                                                    # Write to result file
+                                                    result_output.write(text)
+                                                    result_output.flush()
+                                                    # Log nicely formatted content
+                                                    logger.info(f"Claude: {text.strip()}")
+                                            elif isinstance(block, dict) and block.get('type') == 'tool_use':
+                                                tool_info = f"Tool use: {block.get('name', 'unknown')} - {json.dumps(block.get('input', {}))}"
+                                                logger.info(f"Claude tool use: {tool_info}")
+                                                result_output.write(f"\n[Tool Use: {tool_info}]\n")
+                                                result_output.flush()
+                                    # Log the entire content for debugging
+                                    logger.debug(f"Content structure: {type(content)} - {str(content)[:100]}...")
                                 
                                 # Extract completion info if available
                                 elif 'completion_id' in data:
