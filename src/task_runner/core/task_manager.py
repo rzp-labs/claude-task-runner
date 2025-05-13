@@ -460,94 +460,76 @@ class TaskManager:
             # Choose between streaming with pexpect or simple file redirection
             logger.info(f"{'Using pexpect streaming approach' if use_streaming else 'Using simple file redirection'} for task: {task_name}")
             
-            if use_streaming:
-                # Use pexpect for real-time interactive streaming
-                logger.info("Using pexpect for interactive streaming")
-                from task_runner.core.claude_streamer import stream_claude_output
-                
-                streaming_result = stream_claude_output(
-                    task_file=str(task_file),
-                    result_file=str(result_file),
-                    error_file=str(error_file),
-                    claude_path=str(self.claude_path),
-                    cmd_args=cmd_args,
-                    timeout_seconds=timeout_seconds
-                )
-                
-                # Get execution time and exit code from the result
-                execution_time = streaming_result.get("execution_time", time.time() - start_time)
-                exit_code = streaming_result.get("exit_code", 1)  # Default to error if not present
-            else:
-                # Simple file redirection (faster but no real-time output)
-                cmd_parts = [str(self.claude_path), "--print"] + cmd_args
-                cmd = f"{' '.join(cmd_parts)} < {task_file} > {result_file} 2> {error_file}"
-                logger.info(f"Command with redirection: {cmd}")
-                
-                try:
-                    # Run the command with timeout
-                    process = subprocess.run(
-                        cmd,
-                        shell=True,
-                        timeout=timeout_seconds,
-                        check=False
+            try:
+                if use_streaming:
+                    # Use pexpect for real-time interactive streaming
+                    logger.info("Using pexpect for interactive streaming")
+                    from task_runner.core.claude_streamer import stream_claude_output
+                    
+                    streaming_result = stream_claude_output(
+                        task_file=str(task_file),
+                        result_file=str(result_file),
+                        error_file=str(error_file),
+                        claude_path=str(self.claude_path),
+                        cmd_args=cmd_args,
+                        timeout_seconds=timeout_seconds
                     )
                     
-                    # Process completed
-                    execution_time = time.time() - start_time
-                    exit_code = process.returncode
+                    # Get execution time and exit code from the result
+                    execution_time = streaming_result.get("execution_time", time.time() - start_time)
+                    exit_code = streaming_result.get("exit_code", 1)  # Default to error if not present
+                else:
+                    # Simple file redirection (faster but no real-time output)
+                    cmd_parts = [str(self.claude_path), "--print"] + cmd_args
+                    cmd = f"{' '.join(cmd_parts)} < {task_file} > {result_file} 2> {error_file}"
+                    logger.info(f"Command with redirection: {cmd}")
                     
-                    # Check result
-                    logger.info(f"Command completed with exit code {exit_code} in {execution_time:.2f}s")
-                    
-                    # Result structure 
-                    streaming_result = {
-                        "task_file": str(task_file),
-                        "result_file": str(result_file),
-                        "error_file": str(error_file),
-                        "exit_code": exit_code,
-                        "execution_time": execution_time,
-                        "success": exit_code == 0,
-                        "status": "completed" if exit_code == 0 else "failed"
-                    }
-                except subprocess.TimeoutExpired:
-                    # Handle timeout for non-streaming mode
-                    logger.warning(f"Command timed out after {timeout_seconds}s")
-                    execution_time = time.time() - start_time
-                    exit_code = -1
-                    
-                    # Add timeout message to result file
-                    with open(result_file, "a") as f:
-                        f.write(f"\n\n[TIMEOUT: Claude process was terminated after {timeout_seconds}s]")
-                    
-                    streaming_result = {
-                        "task_file": str(task_file),
-                        "result_file": str(result_file),
-                        "error_file": str(error_file),
-                        "exit_code": exit_code,
-                        "execution_time": execution_time,
-                        "success": False,
-                        "status": "timeout"
-                    }
-                
-            except subprocess.TimeoutExpired:
-                # Handle timeout
-                execution_time = time.time() - start_time
-                logger.warning(f"Command timed out after {timeout_seconds}s")
-                
-                # Add timeout message to result file
-                with open(result_file, "a") as f:
-                    f.write(f"\n\n[TIMEOUT: Claude process was terminated after {timeout_seconds}s]")
-                
-                streaming_result = {
-                    "task_file": str(task_file),
-                    "result_file": str(result_file),
-                    "error_file": str(error_file),
-                    "exit_code": -1,  # Use -1 for timeout
-                    "execution_time": execution_time,
-                    "success": False,
-                    "status": "timeout"
-                }
-                exit_code = -1
+                    try:
+                        # Run the command with timeout
+                        process = subprocess.run(
+                            cmd,
+                            shell=True,
+                            timeout=timeout_seconds,
+                            check=False
+                        )
+                        
+                        # Process completed
+                        execution_time = time.time() - start_time
+                        exit_code = process.returncode
+                        
+                        # Check result
+                        logger.info(f"Command completed with exit code {exit_code} in {execution_time:.2f}s")
+                        
+                        # Result structure 
+                        streaming_result = {
+                            "task_file": str(task_file),
+                            "result_file": str(result_file),
+                            "error_file": str(error_file),
+                            "exit_code": exit_code,
+                            "execution_time": execution_time,
+                            "success": exit_code == 0,
+                            "status": "completed" if exit_code == 0 else "failed"
+                        }
+                    except subprocess.TimeoutExpired:
+                        # Handle timeout for non-streaming mode
+                        logger.warning(f"Command timed out after {timeout_seconds}s")
+                        execution_time = time.time() - start_time
+                        exit_code = -1
+                        
+                        # Add timeout message to result file
+                        with open(result_file, "a") as f:
+                            f.write(f"\n\n[TIMEOUT: Claude process was terminated after {timeout_seconds}s]")
+                        
+                        streaming_result = {
+                            "task_file": str(task_file),
+                            "result_file": str(result_file),
+                            "error_file": str(error_file),
+                            "exit_code": exit_code,
+                            "execution_time": execution_time,
+                            "success": False,
+                            "status": "timeout"
+                        }
+                        exit_code = -1
                 
             except Exception as e:
                 # Handle other errors
