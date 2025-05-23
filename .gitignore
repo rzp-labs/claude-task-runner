@@ -68,7 +68,6 @@ mcp_server.log
 .codacy.yml
 .coverage
 .sonarlint/
-.flake8
 .pytest_cache/
 .mypy_cache/
 .ruff_cache/
