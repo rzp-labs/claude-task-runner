@@ -205,16 +205,16 @@ def get_complete_schema() -> Dict[str, Any]:
 
 
 if __name__ == "__main__":
-    """Validate schema definitions"""
+    # Validate schema definitions
     import json
     import sys
 
     # List to track all validation failures
     all_validation_failures = []
-    total_tests = 0
+    TOTAL_TESTS = 0
 
     # Test 1: Get complete schema
-    total_tests += 1
+    TOTAL_TESTS += 1
     try:
         schema = get_complete_schema()
 
@@ -252,12 +252,12 @@ if __name__ == "__main__":
     # Final validation result
     if all_validation_failures:
         print(
-            f"L VALIDATION FAILED - {len(all_validation_failures)} of {total_tests} tests failed:"
+            f"L VALIDATION FAILED - {len(all_validation_failures)} of {TOTAL_TESTS} tests failed:"
         )
         for failure in all_validation_failures:
             print(f"  - {failure}")
         sys.exit(1)
     else:
-        print(f" VALIDATION PASSED - All {total_tests} tests produced expected results")
+        print(f" VALIDATION PASSED - All {TOTAL_TESTS} tests produced expected results")
         print("Function is validated and formal tests can now be written")
         sys.exit(0)

@@ -262,11 +262,11 @@ def run(
                 f"{summary['failed']} failed, {summary['timeout']} timed out"
             )
 
-    except KeyboardInterrupt:
+    except KeyboardInterrupt as exc:
         if not json_output:
             print_warning("Interrupted by user")
         manager.cleanup()
-        raise typer.Exit(130)
+        raise typer.Exit(130) from exc
 
     except Exception as e:
         if json_output:
@@ -412,7 +412,7 @@ def clean(
 
 
 if __name__ == "__main__":
-    """CLI entry point for the task runner"""
+    # CLI entry point for the task runner
     # Configure logger
     logger.remove()  # Remove default handler
     logger.add(

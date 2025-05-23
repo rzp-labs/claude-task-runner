@@ -82,11 +82,11 @@ def test_generate_cli_schema_parameter_types_and_help():
             },
             "no_table_repeat": {
                 "type": "boolean",
-                "help": "Display table only once, no repeat after each task (better with streaming)",
+                "help": "Display table once, no repeat after each task (with streaming)",
             },
             "dangerous": {
                 "type": "boolean",
-                "help": "Use --dangerously-skip-permissions to bypass Claude permission checks",
+                "help": "Use --dangerously-skip-permissions to bypass permission checks",
             },
         },
         "status": {

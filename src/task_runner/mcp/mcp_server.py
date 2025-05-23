@@ -185,7 +185,7 @@ def main() -> int:
                 return 1
 
             # Start server
-            mcp.run_server(host=args.host, port=args.port)  # type: ignore[attr-defined]
+            mcp.run_server(host=args.host, port=args.port)  # pylint: disable=no-member
 
         except KeyboardInterrupt:
             logger.info("Server stopped by user")
@@ -215,7 +215,7 @@ def main() -> int:
             return 1
 
         # Get schema
-        schema = mcp.get_schema()  # type: ignore[attr-defined]
+        schema = mcp.get_schema()  # pylint: disable=no-member
 
         if args.json:
             print(json.dumps(schema, indent=2))
@@ -243,14 +243,12 @@ def main() -> int:
 
 
 if __name__ == "__main__":
-    """
-    Direct entry point for the Task Runner MCP server.
-    This file is designed to be referenced in .mcp.json.
-
-    Usage:
-      python -m task_runner.mcp.mcp_server start [--host HOST] [--port PORT] [--debug]
-      python -m task_runner.mcp.mcp_server health
-      python -m task_runner.mcp.mcp_server info
-      python -m task_runner.mcp.mcp_server schema [--json]
-    """
+    # Direct entry point for the Task Runner MCP server.
+    # This file is designed to be referenced in .mcp.json.
+    #
+    # Usage:
+    #   python -m task_runner.mcp.mcp_server start [--host HOST] [--port PORT] [--debug]
+    #   python -m task_runner.mcp.mcp_server health
+    #   python -m task_runner.mcp.mcp_server info
+    #   python -m task_runner.mcp.mcp_server schema [--json]
     sys.exit(main())
