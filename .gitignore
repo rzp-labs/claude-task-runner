@@ -30,6 +30,9 @@ ENV/
 env.bak/
 venv.bak/
 
+# Package managers
+uv.lock
+
 # Project specific
 archive/
 examples/

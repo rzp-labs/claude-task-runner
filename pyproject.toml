@@ -1,78 +1,67 @@
-[build-system]
-requires = ["setuptools>=42", "wheel"]
-build-backend = "setuptools.build_meta"
-
-[project]
-name = "task_runner"
+[tool.poetry]
+name = "task-runner"
 version = "1.0.0"
 description = "Claude Task Runner - A tool for managing context isolation and focused task execution with Claude"
-authors = [
-    {name = "Graham Anderson", email = "graham@grahama.co"}
-]
+authors = ["Graham Anderson <graham@grahama.co>"]
 readme = "README.md"
-requires-python = ">=3.10.11"
-license = {text = "MIT"}
-dependencies = [
-    "mcp",
-    "pillow",
-    "loguru",
-    "mss",
-    "rich",
-    "screeninfo>=0.8.1",
-    "litellm>=1.68.2",
-    "json-repair>=0.44.1",
-    "redis>=6.0.0",
-    "python-dotenv>=1.1.0",
-    # "pexpect>=4.8.0", # For interactive process management
-    # API centric
-    "google-auth>=2.39.0",
-    "google-auth-oauthlib>=1.2.2",
-    "typer>=0.15.3",
-    "python-arango>=8.1.6",
-    "fastmcp>=2.3.3",
+license = "MIT"
+homepage = "https://github.com/rzp-labs/claude-task-runner"
+repository = "https://github.com/rzp-labs/claude-task-runner"
+documentation = "https://github.com/rzp-labs/claude-task-runner"
+keywords = ["claude", "ai", "task-runner", "mcp", "automation"]
+classifiers = [
+    "Development Status :: 4 - Beta",
+    "Intended Audience :: Developers",
+    "License :: OSI Approved :: MIT License",
+    "Programming Language :: Python :: 3",
+    "Programming Language :: Python :: 3.10",
+    "Programming Language :: Python :: 3.11",
+    "Programming Language :: Python :: 3.12",
 ]
+packages = [{include = "task_runner", from = "src"}]
 
-[project.scripts]
+[tool.poetry.dependencies]
+python = "^3.10"
+mcp = "^1.0.0"
+pillow = "^10.0.0"
+loguru = "^0.7.0"
+mss = "^9.0.0"
+rich = "^13.0.0"
+screeninfo = "^0.8.1"
+litellm = "^1.68.2"
+json-repair = "^0.44.1"
+redis = "^6.0.0"
+python-dotenv = "^1.0.0"
+google-auth = "^2.39.0"
+google-auth-oauthlib = "^1.2.2"
+typer = "^0.15.3"
+python-arango = "^8.1.6"
+fastmcp = "^2.3.3"
+
+[tool.poetry.group.dev.dependencies]
+pytest = "^7.0.0"
+pytest-cov = "^4.0.0"
+black = "^23.0.0"
+isort = "^5.0.0"
+mypy = "^1.0.0"
+pylint = "^3.0.0"
+ruff = "^0.1.0"
+pre-commit = "^3.0.0"
+bandit = "^1.7.0"
+safety = "^3.0.0"
+
+[tool.poetry.scripts]
 task-runner = "task_runner.cli.app:app"
 task-runner-mcp = "task_runner.mcp.server:app"
 
-[project.optional-dependencies]
-dev = [
-    "pytest>=7.0.0",
-    "pytest-cov>=4.0.0",
-    "black>=23.0.0",
-    "isort>=5.0.0",
-    "mypy>=1.0.0",
-    "pylint>=2.17.0",
-    "ruff>=0.1.0",
-]
+[build-system]
+requires = ["poetry-core>=1.0.0"]
+build-backend = "poetry.core.masonry.api"
 
-[project.urls]
-"Homepage" = "https://github.com/rzp-labs/claude-task-runner"
-"Bug Tracker" = "https://github.com/rzp-labs/claude-task-runner/issues"
-
-[tool.setuptools]
-package-dir = {"" = "src"}
-
-[tool.setuptools.packages.find]
-where = ["src"]
-
+# Tool configurations
 [tool.black]
 line-length = 100
-target-version = ["py38"]
-
-[tool.pytest.ini_options]
-testpaths = ["tests"]
-python_files = "test_*.py"
-python_classes = "Test*"
-python_functions = "test_*"
-pythonpath = ["src"]
-addopts = "--strict-markers --cov=task_runner"
-markers = [
-    "unit: marks tests as unit tests",
-    "integration: marks tests as integration tests",
-    "mcp: marks tests that require MCP infrastructure",
-]
+target-version = ["py310"]
 
 [tool.isort]
 profile = "black"
@@ -87,7 +76,6 @@ disallow_untyped_defs = true
 disallow_incomplete_defs = true
 
 [tool.pylint.messages_control]
-# Keep strict rules - only disable genuine conflicts
 disable = [
     "redefined-outer-name",  # pytest fixtures legitimately redefine names
 ]
@@ -114,7 +102,29 @@ select = [
     "W",  # pycodestyle warnings
     "F",  # pyflakes
     "I",  # isort
+    "N",  # pep8-naming
+    "B",  # flake8-bugbear
+    "S",  # bandit security
+    "C90", # mccabe complexity
+    "UP",  # pyupgrade
 ]
 ignore = [
     "E203",  # whitespace before ':' (conflicts with black)
+]
+
+[tool.bandit]
+exclude_dirs = ["tests", ".venv", "venv"]
+skips = ["B101"]  # skip assert_used test
+
+[tool.pytest.ini_options]
+testpaths = ["tests"]
+python_files = "test_*.py"
+python_classes = "Test*"
+python_functions = "test_*"
+pythonpath = ["src"]
+addopts = "--strict-markers --cov=task_runner"
+markers = [
+    "unit: marks tests as unit tests",
+    "integration: marks tests as integration tests",
+    "mcp: marks tests that require MCP infrastructure",
 ]
