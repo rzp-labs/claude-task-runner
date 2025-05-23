@@ -1,23 +1,24 @@
 #!/usr/bin/env python3
 """
-Tests for the formatters in the presentation layer
+Tests for the formatters in the cli layer
 """
 
-import pytest
-from rich.table import Table
-from rich.panel import Panel
-from rich.console import Console
 from io import StringIO
 
-from task_runner.presentation.formatters import (
-    create_status_table,
+import pytest
+from rich.console import Console
+from rich.panel import Panel
+from rich.table import Table
+
+from task_runner.cli.formatters import (
     create_current_task_panel,
+    create_status_table,
     create_summary_panel,
     print_error,
-    print_warning,
     print_info,
+    print_json,
     print_success,
-    print_json
+    print_warning,
 )
 
 
@@ -30,26 +31,22 @@ def sample_task_state():
             "started_at": "2023-01-01T10:00:00",
             "completed_at": "2023-01-01T10:05:00",
             "execution_time": 300,
-            "exit_code": 0
+            "exit_code": 0,
         },
-        "002_task_two": {
-            "status": "running",
-            "started_at": "2023-01-01T10:10:00"
-        },
-        "003_task_three": {
-            "status": "pending"
-        }
+        "002_task_two": {"status": "running", "started_at": "2023-01-01T10:10:00"},
+        "003_task_three": {"status": "pending"},
     }
 
 
 def test_create_status_table(sample_task_state):
     """Test creating a status table"""
     table = create_status_table(sample_task_state)
-    
+
     # Basic validation
     assert isinstance(table, Table)
     assert table.title == "Task Status"
-    assert len(table.columns) == 6
+    # Updated: Now has 7 columns including Result
+    assert len(table.columns) == 7
 
 
 def test_create_current_task_panel(sample_task_state):
@@ -57,7 +54,7 @@ def test_create_current_task_panel(sample_task_state):
     # Test with current task
     panel = create_current_task_panel(sample_task_state, "002_task_two", 1609502400)
     assert isinstance(panel, Panel)
-    
+
     # Test with no current task
     panel = create_current_task_panel(sample_task_state)
     assert isinstance(panel, Panel)
@@ -75,55 +72,56 @@ def test_print_functions():
     # Create a string console for capturing output
     str_io = StringIO()
     console = Console(file=str_io, width=100)
-    
+
     # Temporarily override the console in formatters
-    import task_runner.presentation.formatters as formatters
-    original_console = formatters.console
-    formatters.console = console
-    
+    import task_runner.cli.formatters as fmt_module
+
+    original_console = fmt_module.console
+    fmt_module.console = console
+
     try:
         # Test print functions
         print_error("This is an error")
         output = str_io.getvalue()
         assert "This is an error" in output
         assert "Error" in output
-        
+
         # Reset output
         str_io.truncate(0)
         str_io.seek(0)
-        
+
         print_warning("This is a warning")
         output = str_io.getvalue()
         assert "This is a warning" in output
         assert "Warning" in output
-        
+
         # Reset output
         str_io.truncate(0)
         str_io.seek(0)
-        
+
         print_info("This is info")
         output = str_io.getvalue()
         assert "This is info" in output
         assert "Info" in output
-        
+
         # Reset output
         str_io.truncate(0)
         str_io.seek(0)
-        
+
         print_success("This is success")
         output = str_io.getvalue()
         assert "This is success" in output
         assert "Success" in output
-        
+
         # Reset output
         str_io.truncate(0)
         str_io.seek(0)
-        
+
         # Test print_json
         print_json({"key": "value"})
         output = str_io.getvalue()
         assert '"key": "value"' in output
-    
+
     finally:
         # Restore original console
-        formatters.console = original_console
+        fmt_module.console = original_console

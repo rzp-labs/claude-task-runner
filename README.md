@@ -107,7 +107,7 @@ After installation, restart Claude Desktop and ensure you see the hammer icon in
 - **Execution Control**: Run tasks individually or in sequence, with result management
 - **Status Tracking**: Monitor project progress and task completion status
 - **Modern CLI**: Intuitive command-line interface with rich formatting
-- **Multiple Dashboard Options**: 
+- **Multiple Dashboard Options**:
   - Modern Textual-based interactive dashboard UI with fixed header and scrolling output area
   - Real-time task status with color-coded indicators
   - Markdown rendering for Claude output with proper formatting

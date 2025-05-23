@@ -41,4 +41,4 @@ format:
 	isort src tests
 
 mcp-server:
-	python scripts/run_task_runner_server.py start
+	python -m task_runner.mcp.server start

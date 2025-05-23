@@ -1,0 +1,30 @@
+# Simulated output for 003_create_unit_test_examples
+
+## Unit Test Examples
+
+```python
+import pytest
+from task_runner.core.task_manager import TaskManager
+
+@pytest.fixture
+def task_manager():
+    """Create a TaskManager instance for testing."""
+    return TaskManager(Path('/tmp/test_task_runner'))
+
+def test_run_task_success(task_manager, monkeypatch):
+    """Test that run_task succeeds with valid input."""
+    # Arrange
+    task_file = Path('/tmp/test_task.md')
+    with open(task_file, 'w') as f:
+        f.write('Test task content')
+
+    # Mock subprocess to avoid actual Claude execution
+    monkeypatch.setattr(subprocess, 'Popen', MockPopen)
+
+    # Act
+    success, result = task_manager.run_task(task_file, demo_mode=True)
+
+    # Assert
+    assert success is True
+    assert result['status'] == 'completed'
+```

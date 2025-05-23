@@ -1,0 +1,30 @@
+# Simulated output for 004_develop_cli_argument_parser
+
+## CLI Argument Parser Example
+
+```python
+import typer
+from pathlib import Path
+from typing import Optional
+
+app = typer.Typer(help="Claude Task Runner")
+
+@app.command()
+def run(
+    task_list: Optional[Path] = typer.Argument(
+        None, help="Path to task list file"
+    ),
+    base_dir: Path = typer.Option(
+        Path.home() / "claude_task_runner",
+        help="Base directory for tasks and results",
+    ),
+    timeout: int = typer.Option(
+        300, "--timeout", help="Timeout in seconds for each task"
+    ),
+    demo_mode: bool = typer.Option(
+        False, "--demo", help="Run in demo mode with simulated responses"
+    ),
+):
+    """Run tasks with Claude in isolated contexts."""
+    # Implementation details...
+```

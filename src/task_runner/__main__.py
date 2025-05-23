@@ -7,7 +7,9 @@ python -m task_runner <command> [args]
 """
 
 import sys
+
 from loguru import logger
+
 from task_runner.cli.app import app
 
 if __name__ == "__main__":
@@ -17,7 +19,7 @@ if __name__ == "__main__":
         sys.stderr,
         format="<level>{time:YYYY-MM-DD HH:mm:ss.SSS} | {level: <8} | {function}:{line} - {message}</level>",
         level="INFO",  # Show INFO level logs to diagnose performance issues
-        colorize=True
+        colorize=True,
     )
-    
+
     app()

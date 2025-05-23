@@ -20,13 +20,13 @@ Expected output:
 - JSON Schema objects
 """
 
-from typing import Dict, Any
+from typing import Any, Dict
 
 
 def get_run_task_schema() -> Dict[str, Any]:
     """
     Get schema for run_task MCP function
-    
+
     Returns:
         JSON Schema for run_task function
     """
@@ -35,29 +35,26 @@ def get_run_task_schema() -> Dict[str, Any]:
         "parameters": {
             "type": "object",
             "properties": {
-                "task_path": {
-                    "type": "string",
-                    "description": "Path to the task file"
-                },
+                "task_path": {"type": "string", "description": "Path to the task file"},
                 "base_dir": {
                     "type": "string",
-                    "description": "Base directory for tasks and results"
+                    "description": "Base directory for tasks and results",
                 },
                 "timeout_seconds": {
                     "type": "integer",
                     "description": "Maximum execution time in seconds",
-                    "default": 300
-                }
+                    "default": 300,
+                },
             },
-            "required": ["task_path"]
-        }
+            "required": ["task_path"],
+        },
     }
 
 
 def get_run_all_tasks_schema() -> Dict[str, Any]:
     """
     Get schema for run_all_tasks MCP function
-    
+
     Returns:
         JSON Schema for run_all_tasks function
     """
@@ -68,22 +65,22 @@ def get_run_all_tasks_schema() -> Dict[str, Any]:
             "properties": {
                 "base_dir": {
                     "type": "string",
-                    "description": "Base directory for tasks and results"
+                    "description": "Base directory for tasks and results",
                 },
                 "resume": {
                     "type": "boolean",
                     "description": "Resume from previously interrupted tasks",
-                    "default": False
-                }
-            }
-        }
+                    "default": False,
+                },
+            },
+        },
     }
 
 
 def get_parse_task_list_schema() -> Dict[str, Any]:
     """
     Get schema for parse_task_list MCP function
-    
+
     Returns:
         JSON Schema for parse_task_list function
     """
@@ -92,24 +89,21 @@ def get_parse_task_list_schema() -> Dict[str, Any]:
         "parameters": {
             "type": "object",
             "properties": {
-                "task_list_path": {
-                    "type": "string",
-                    "description": "Path to the task list file"
-                },
+                "task_list_path": {"type": "string", "description": "Path to the task list file"},
                 "base_dir": {
                     "type": "string",
-                    "description": "Base directory for tasks and results"
-                }
+                    "description": "Base directory for tasks and results",
+                },
             },
-            "required": ["task_list_path"]
-        }
+            "required": ["task_list_path"],
+        },
     }
 
 
 def get_create_project_schema() -> Dict[str, Any]:
     """
     Get schema for create_project MCP function
-    
+
     Returns:
         JSON Schema for create_project function
     """
@@ -118,28 +112,19 @@ def get_create_project_schema() -> Dict[str, Any]:
         "parameters": {
             "type": "object",
             "properties": {
-                "project_name": {
-                    "type": "string",
-                    "description": "Name of the project"
-                },
-                "task_list_path": {
-                    "type": "string",
-                    "description": "Path to the task list file"
-                },
-                "base_dir": {
-                    "type": "string", 
-                    "description": "Base directory for projects"
-                }
+                "project_name": {"type": "string", "description": "Name of the project"},
+                "task_list_path": {"type": "string", "description": "Path to the task list file"},
+                "base_dir": {"type": "string", "description": "Base directory for projects"},
             },
-            "required": ["project_name"]
-        }
+            "required": ["project_name"],
+        },
     }
 
 
 def get_get_task_status_schema() -> Dict[str, Any]:
     """
     Get schema for get_task_status MCP function
-    
+
     Returns:
         JSON Schema for get_task_status function
     """
@@ -150,17 +135,17 @@ def get_get_task_status_schema() -> Dict[str, Any]:
             "properties": {
                 "base_dir": {
                     "type": "string",
-                    "description": "Base directory for tasks and results"
+                    "description": "Base directory for tasks and results",
                 }
-            }
-        }
+            },
+        },
     }
 
 
 def get_get_task_summary_schema() -> Dict[str, Any]:
     """
     Get schema for get_task_summary MCP function
-    
+
     Returns:
         JSON Schema for get_task_summary function
     """
@@ -171,17 +156,17 @@ def get_get_task_summary_schema() -> Dict[str, Any]:
             "properties": {
                 "base_dir": {
                     "type": "string",
-                    "description": "Base directory for tasks and results"
+                    "description": "Base directory for tasks and results",
                 }
-            }
-        }
+            },
+        },
     }
 
 
 def get_clean_schema() -> Dict[str, Any]:
     """
     Get schema for clean MCP function
-    
+
     Returns:
         JSON Schema for clean function
     """
@@ -192,17 +177,17 @@ def get_clean_schema() -> Dict[str, Any]:
             "properties": {
                 "base_dir": {
                     "type": "string",
-                    "description": "Base directory for tasks and results"
+                    "description": "Base directory for tasks and results",
                 }
-            }
-        }
+            },
+        },
     }
 
 
 def get_complete_schema() -> Dict[str, Any]:
     """
     Get complete MCP schema
-    
+
     Returns:
         Complete MCP schema for all functions
     """
@@ -214,29 +199,29 @@ def get_complete_schema() -> Dict[str, Any]:
             "create_project": get_create_project_schema(),
             "get_task_status": get_get_task_status_schema(),
             "get_task_summary": get_get_task_summary_schema(),
-            "clean": get_clean_schema()
+            "clean": get_clean_schema(),
         }
     }
 
 
 if __name__ == "__main__":
     """Validate schema definitions"""
-    import sys
     import json
-    
+    import sys
+
     # List to track all validation failures
     all_validation_failures = []
     total_tests = 0
-    
+
     # Test 1: Get complete schema
     total_tests += 1
     try:
         schema = get_complete_schema()
-        
+
         # Validate structure
         if "functions" not in schema:
             all_validation_failures.append("Complete schema missing 'functions' key")
-        
+
         # Check that all functions are present
         expected_functions = [
             "run_task",
@@ -245,28 +230,30 @@ if __name__ == "__main__":
             "create_project",
             "get_task_status",
             "get_task_summary",
-            "clean"
+            "clean",
         ]
-        
+
         for func in expected_functions:
             if func not in schema["functions"]:
                 all_validation_failures.append(f"Function '{func}' missing from schema")
-        
+
         # Validate each function schema
         for func, func_schema in schema["functions"].items():
             if "description" not in func_schema:
                 all_validation_failures.append(f"Function '{func}' missing description")
             if "parameters" not in func_schema:
                 all_validation_failures.append(f"Function '{func}' missing parameters")
-        
+
         # Print the schema
         print(json.dumps(schema, indent=2))
     except Exception as e:
         all_validation_failures.append(f"Complete schema test failed: {e}")
-    
+
     # Final validation result
     if all_validation_failures:
-        print(f"L VALIDATION FAILED - {len(all_validation_failures)} of {total_tests} tests failed:")
+        print(
+            f"L VALIDATION FAILED - {len(all_validation_failures)} of {total_tests} tests failed:"
+        )
         for failure in all_validation_failures:
             print(f"  - {failure}")
         sys.exit(1)

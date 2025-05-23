@@ -16,23 +16,24 @@ Expected output:
 """
 
 from pathlib import Path
-from typing import Optional, Any
+from typing import Any, Optional
 
 import typer
 from rich.console import Console
 
 console = Console()
 
+
 def validate_task_list_file(value: Optional[Path]) -> Optional[Path]:
     """
     Validate that a task list file exists
-    
+
     Args:
         value: Path to the task list file
-        
+
     Returns:
         Validated path or None
-        
+
     Raises:
         typer.BadParameter: If the file does not exist
     """
@@ -40,13 +41,14 @@ def validate_task_list_file(value: Optional[Path]) -> Optional[Path]:
         raise typer.BadParameter(f"Task list file not found: {value}")
     return value
 
+
 def validate_base_dir(value: Path) -> Path:
     """
     Validate base directory
-    
+
     Args:
         value: Base directory path
-        
+
     Returns:
         Validated path
     """
@@ -55,16 +57,17 @@ def validate_base_dir(value: Path) -> Path:
         value = Path(str(value).replace("~", str(Path.home())))
     return value
 
+
 def validate_timeout(value: int) -> int:
     """
     Validate timeout value
-    
+
     Args:
         value: Timeout in seconds
-        
+
     Returns:
         Validated timeout
-        
+
     Raises:
         typer.BadParameter: If timeout is negative
     """
@@ -72,16 +75,17 @@ def validate_timeout(value: int) -> int:
         raise typer.BadParameter("Timeout cannot be negative")
     return value
 
+
 def validate_pool_size(value: int) -> int:
     """
     Validate pool size
-    
+
     Args:
         value: Pool size
-        
+
     Returns:
         Validated pool size
-        
+
     Raises:
         typer.BadParameter: If pool size is negative
     """
@@ -89,13 +93,14 @@ def validate_pool_size(value: int) -> int:
         raise typer.BadParameter("Pool size cannot be negative")
     return value
 
+
 def validate_json_output(value: bool) -> bool:
     """
     Validate json output option
-    
+
     Args:
         value: JSON output flag
-        
+
     Returns:
         Validated JSON output flag
     """
@@ -105,11 +110,11 @@ def validate_json_output(value: bool) -> bool:
 if __name__ == "__main__":
     """Validate validators"""
     import sys
-    
+
     # List to track all validation failures
     all_validation_failures = []
     total_tests = 0
-    
+
     # Test 1: Validate task list file
     total_tests += 1
     try:
@@ -118,7 +123,7 @@ if __name__ == "__main__":
         result = validate_task_list_file(test_file)
         if result != test_file:
             all_validation_failures.append("Failed to validate existing file")
-        
+
         # Non-existent file - should raise exception
         try:
             validate_task_list_file(Path("non_existent_file.md"))
@@ -127,7 +132,7 @@ if __name__ == "__main__":
             pass  # Expected
     except Exception as e:
         all_validation_failures.append(f"Validate task list file test failed: {e}")
-    
+
     # Test 2: Validate base directory
     total_tests += 1
     try:
@@ -136,7 +141,7 @@ if __name__ == "__main__":
         result = validate_base_dir(test_dir)
         if result != test_dir:
             all_validation_failures.append("Failed to validate regular directory")
-        
+
         # User home directory
         home_dir = Path("~/test")
         result = validate_base_dir(home_dir)
@@ -144,15 +149,15 @@ if __name__ == "__main__":
             all_validation_failures.append("Failed to expand user directory")
     except Exception as e:
         all_validation_failures.append(f"Validate base directory test failed: {e}")
-    
+
     # Test 3: Validate timeout
     total_tests += 1
     try:
         # Valid timeout
-        result = validate_timeout(300)
-        if result != 300:
+        timeout_result = validate_timeout(300)
+        if timeout_result != 300:
             all_validation_failures.append("Failed to validate valid timeout")
-        
+
         # Negative timeout - should raise exception
         try:
             validate_timeout(-1)
@@ -161,10 +166,12 @@ if __name__ == "__main__":
             pass  # Expected
     except Exception as e:
         all_validation_failures.append(f"Validate timeout test failed: {e}")
-    
+
     # Final validation result
     if all_validation_failures:
-        print(f"❌ VALIDATION FAILED - {len(all_validation_failures)} of {total_tests} tests failed:")
+        print(
+            f"❌ VALIDATION FAILED - {len(all_validation_failures)} of {total_tests} tests failed:"
+        )
         for failure in all_validation_failures:
             print(f"  - {failure}")
         sys.exit(1)

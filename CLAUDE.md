@@ -7,6 +7,7 @@
 **IMPORTANT**: As an agent, you MUST read and follow ALL guidelines in this document BEFORE executing any task in a task list. DO NOT skip or ignore any part of these standards. These standards supersede any conflicting instructions you may have received previously.
 
 ## Project Structure
+
 ```
 project_name/
 ├── docs/
@@ -38,6 +39,7 @@ project_name/
 - **Layered Architecture**: Separate core functions, presentation, and MCP integrations
 
 ## Module Requirements
+
 - **Size**: Maximum 500 lines of code per file
 - **Documentation Header**: Every file must include:
   - Description of purpose
@@ -50,6 +52,7 @@ project_name/
   - Include multiple test cases covering normal usage, edge cases, and error handling
 
 ## Architecture Principles
+
 - **Function-First**: Prefer simple functions over classes
 - **Class Usage**: Only use classes when:
   - Maintaining state
@@ -57,10 +60,12 @@ project_name/
   - Following established design patterns
 - **Async Code**: Never use `asyncio.run()` inside functions - only in main blocks
 - **Type Hints**: Use the typing library for clear type annotations to improve code understanding and tooling
+
   - Type hints should be used for all function parameters and return values
   - Use type hints for key variables where it improves clarity
   - Prefer concrete types over Any when possible
   - Do not add type hints if they significantly reduce code readability
+
   ```python
   # Good type hint usage:
   from typing import Dict, List, Optional, Union, Tuple
@@ -75,16 +80,18 @@ project_name/
       name = "John"  # Type inference works here, no annotation needed
       return name
   ```
+
 - **Independent Function Debugging**: Each function must be independently debuggable
   - Include clear sample inputs and expected outputs in docstrings
   - Functions should be usable in isolation with minimal dependencies
   - Core logic should be separate from presentation concerns
-- **NO Conditional Imports**: 
+- **NO Conditional Imports**:
+
   - Never use try/except blocks for imports of required packages
   - If a package is in pyproject.toml, import it directly at the top of the file
   - Handle specific errors during usage, not during import
   - Only use conditional imports for truly optional features (rare)
-  
+
   ```python
   # INCORRECT - DO NOT DO THIS:
   try:
@@ -92,10 +99,10 @@ project_name/
       TIKTOKEN_AVAILABLE = True
   except ImportError:
       TIKTOKEN_AVAILABLE = False
-      
+
   # CORRECT APPROACH:
   import tiktoken  # Listed in pyproject.toml as a dependency
-  
+
   def count_tokens(text, model="gpt-3.5-turbo"):
       # Handle errors during usage, not import
       try:
@@ -107,6 +114,7 @@ project_name/
   ```
 
 ## Validation & Testing
+
 - **Real Data**: Always test with actual data, never fake inputs
 - **Expected Results**: Verify outputs against concrete expected results
 - **No Mocking**: NEVER mock core functionality
@@ -117,6 +125,7 @@ project_name/
 - **🔴 External Research After 3 Failures**: If a usage function fails validation 3 consecutive times with different approaches, the agent MUST use external research tools (perplexity_ask, perplexity_research, web_search) to find current best practices, package updates, or solutions for the specific problem. Document the research findings in comments.
 - **🔴 NO UNCONDITIONAL "TESTS PASSED" MESSAGES**: NEVER include unconditional "All Tests Passed" or similar validation success messages. Success messages MUST be conditional on ACTUAL test results.
 - **🔴 TRACK ALL VALIDATION FAILURES**: ALWAYS track ALL validation failures and report them at the end. NEVER stop validation after the first failure.
+
   ```python
   # INCORRECT - DO NOT DO THIS:
   if __name__ == "__main__":
@@ -124,15 +133,15 @@ project_name/
       result = process_data(test_data)
       # This always prints regardless of success/failure
       print("✅ VALIDATION PASSED - All tests successful")
-  
+
   # CORRECT IMPLEMENTATION:
   if __name__ == "__main__":
       import sys
-      
+
       # List to track all validation failures
       all_validation_failures = []
       total_tests = 0
-      
+
       # Test 1: Basic functionality
       total_tests += 1
       test_data = "example input"
@@ -140,7 +149,7 @@ project_name/
       expected = {"key": "processed value"}
       if result != expected:
           all_validation_failures.append(f"Basic test: Expected {expected}, got {result}")
-      
+
       # Test 2: Edge case handling
       total_tests += 1
       edge_case = "empty"
@@ -148,7 +157,7 @@ project_name/
       edge_expected = {"key": ""}
       if edge_result != edge_expected:
           all_validation_failures.append(f"Edge case: Expected {edge_expected}, got {edge_result}")
-      
+
       # Test 3: Error handling
       total_tests += 1
       try:
@@ -159,7 +168,7 @@ project_name/
           pass
       except Exception as e:
           all_validation_failures.append(f"Error handling: Expected ValueError for None input, but got {type(e).__name__}")
-      
+
       # Final validation result
       if all_validation_failures:
           print(f"❌ VALIDATION FAILED - {len(all_validation_failures)} of {total_tests} tests failed:")
@@ -173,14 +182,18 @@ project_name/
   ```
 
 ## Standard Components
+
 - **Logging**: Always use loguru for logging
+
   ```python
   from loguru import logger
 
   # Configure logger
   logger.add("app.log", rotation="10 MB")
   ```
+
 - **CLI Structure**: Every command-line tool must use typer in a `cli.py` file
+
   ```python
   import typer
   from typing import Optional
@@ -219,16 +232,19 @@ project_name/
   if __name__ == "__main__":
       app()
   ```
+
 - **Separation of Concerns**: Structure code in layers
   - Core functions: Pure business logic with no UI or framework dependencies
   - Presentation layer: Rich formatting, tables, and console output
   - MCP integration: Adapters for MCP protocol and FastMCP wrappers
 
 ## Package Selection
+
 - **Research First**: Always research packages before adding dependencies
 - **95/5 Rule**: Use 95% package functionality, 5% customization
 - **Documentation**: Include links to current documentation in comments
 - **FastMCP Integration**: Use FastMCP for wrapping CLI tools
+
   ```python
   from fastmcp import FastMCP
   from .cli import app as cli_app
@@ -248,12 +264,14 @@ project_name/
   ```
 
 ## Development Priority
+
 1. Working Code
 2. Validation
 3. Readability
 4. Static Analysis (address only after code works)
 
 ## Execution Standards
+
 - ALWAYS navigate to the project root directory before executing any command
 - ALWAYS verify the virtual environment is activated before running Python code
 - Run scripts from the project root with: `uv run script.py` or `python -m path.to.module`
@@ -262,10 +280,11 @@ project_name/
 - When testing functionality that requires credentials, always check if credential files exist and are accessible
 
 ## Task Planning
+
 All task plans must follow the standard structure defined in the Task Plan Guide:
 
 - **Document Location**: Store in `docs/memory_bank/guides/TASK_PLAN_GUIDE.md`
-- **Core Principles**: 
+- **Core Principles**:
   - Detailed task descriptions for consistent understanding
   - Verification-first development approach
   - Version control discipline with frequent commits
@@ -294,6 +313,7 @@ All task plans must follow the standard structure defined in the Task Plan Guide
 - **ALWAYS structure validation in a way that explicitly checks EACH test case**
 
 ## 🔴 COMPLIANCE CHECK
+
 As an agent, before completing a task, verify that your work adheres to ALL standards in this document. Confirm each of the following:
 
 1. All files have appropriate documentation headers

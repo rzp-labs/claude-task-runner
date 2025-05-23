@@ -1,0 +1,62 @@
+{
+  "001_analyze_python_code_structure": {
+    "name": "001_analyze_python_code_structure",
+    "status": "completed",
+    "created_at": "2025-05-21T00:24:19.010198",
+    "updated_at": "2025-05-21T01:13:36.040539",
+    "title": "Analyze Python Code Structure",
+    "task_file": "/Users/stephen/claude_task_runner/tasks/001_analyze_python_code_structure.md",
+    "result_file": "/Users/stephen/claude_task_runner/results/001_analyze_python_code_structure.result",
+    "error_file": "/Users/stephen/claude_task_runner/results/001_analyze_python_code_structure.error",
+    "started_at": "2025-05-21T01:13:34.945521",
+    "completed_at": "2025-05-21T01:13:36.040443",
+    "exit_code": 0,
+    "execution_time": 1.0376964330079312,
+    "result_size": 509
+  },
+  "002_generate_documentation_template": {
+    "name": "002_generate_documentation_template",
+    "status": "completed",
+    "created_at": "2025-05-21T00:24:19.010395",
+    "updated_at": "2025-05-21T01:13:38.898138",
+    "title": "Generate Documentation Template",
+    "task_file": "/Users/stephen/claude_task_runner/tasks/002_generate_documentation_template.md",
+    "result_file": "/Users/stephen/claude_task_runner/results/002_generate_documentation_template.result",
+    "error_file": "/Users/stephen/claude_task_runner/results/002_generate_documentation_template.error",
+    "started_at": "2025-05-21T01:13:37.155538",
+    "completed_at": "2025-05-21T01:13:38.897967",
+    "exit_code": 0,
+    "execution_time": 1.643682684114158,
+    "result_size": 569
+  },
+  "003_create_unit_test_examples": {
+    "name": "003_create_unit_test_examples",
+    "status": "completed",
+    "created_at": "2025-05-21T00:24:19.010581",
+    "updated_at": "2025-05-21T01:13:40.640439",
+    "title": "Create Unit Test Examples",
+    "task_file": "/Users/stephen/claude_task_runner/tasks/003_create_unit_test_examples.md",
+    "result_file": "/Users/stephen/claude_task_runner/results/003_create_unit_test_examples.result",
+    "error_file": "/Users/stephen/claude_task_runner/results/003_create_unit_test_examples.error",
+    "started_at": "2025-05-21T01:13:40.014304",
+    "completed_at": "2025-05-21T01:13:40.640288",
+    "exit_code": 0,
+    "execution_time": 0.5248690885866458,
+    "result_size": 821
+  },
+  "004_develop_cli_argument_parser": {
+    "name": "004_develop_cli_argument_parser",
+    "status": "completed",
+    "created_at": "2025-05-21T00:24:19.010851",
+    "updated_at": "2025-05-21T01:13:43.527905",
+    "title": "Develop CLI Argument Parser",
+    "task_file": "/Users/stephen/claude_task_runner/tasks/004_develop_cli_argument_parser.md",
+    "result_file": "/Users/stephen/claude_task_runner/results/004_develop_cli_argument_parser.result",
+    "error_file": "/Users/stephen/claude_task_runner/results/004_develop_cli_argument_parser.error",
+    "started_at": "2025-05-21T01:13:41.749561",
+    "completed_at": "2025-05-21T01:13:43.527704",
+    "exit_code": 0,
+    "execution_time": 1.6842317814386707,
+    "result_size": 789
+  }
+}

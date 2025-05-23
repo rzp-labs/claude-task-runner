@@ -84,6 +84,7 @@ Parameters:
 - `--no-pool`: Disable Claude process pooling (creates new process for each task)
 - `--pool-size`: Maximum number of Claude processes to keep in the pool (default: 3)
 - `--no-streaming`: Disable real-time output streaming (uses simple file redirection)
+- `--dangerous`: Use --dangerously-skip-permissions to bypass Claude permission checks for MCP tools
 
 Examples:
 ```bash
@@ -92,6 +93,9 @@ python -m task_runner.cli.app run input/sample_tasks.md --base-dir ./debug_proje
 
 # Run with simple file redirection (faster, but no real-time output)
 python -m task_runner.cli.app run input/sample_tasks.md --base-dir ./debug_project --no-streaming
+
+# Run with dangerous mode to bypass permission prompts for MCP tools
+python -m task_runner.cli.app run input/sample_tasks.md --base-dir ./debug_project --dangerous
 ```
 
 The first command:
@@ -104,6 +108,12 @@ The second command:
 1. Runs tasks with faster simple file redirection
 2. Output is only visible when each task is complete
 3. May be 10-15% faster but doesn't show real-time progress
+
+The third command:
+1. Runs tasks with --dangerously-skip-permissions flag
+2. Bypasses Claude's permission prompts for MCP tool usage
+3. Useful when running tasks that need to use MCP tools like desktop-commander
+4. Use with caution as it grants Claude full access to configured MCP tools
 
 ### Checking Status
 

@@ -1,0 +1,24 @@
+# Simulated output for 002_generate_documentation_template
+
+## Documentation Templates
+
+```python
+def function_name(param1: Type, param2: Optional[Type] = None) -> ReturnType:
+    """
+    Brief description of function purpose.
+
+    Args:
+        param1: Description of first parameter
+        param2: Description of second parameter, defaults to None
+
+    Returns:
+        Description of return value
+
+    Raises:
+        ExceptionType: When and why this exception is raised
+
+    Examples:
+        >>> function_name('example', 123)
+        'example_result'
+    """
+```
