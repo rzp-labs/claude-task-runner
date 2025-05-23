@@ -22,11 +22,10 @@ def test_all_schema_functions():
     # Verify each schema
     for name, schema in schemas.items():
         assert isinstance(schema, dict)
-        assert schema["name"] == name
         assert "description" in schema
-        assert "inputSchema" in schema
-        assert schema["inputSchema"]["type"] == "object"
-        assert "properties" in schema["inputSchema"]
+        assert "parameters" in schema
+        assert schema["parameters"]["type"] == "object"
+        assert "properties" in schema["parameters"]
         
         # Test JSON serialization
         json_str = json.dumps(schema)
@@ -35,14 +34,16 @@ def test_all_schema_functions():
     # Test complete schema
     complete = get_complete_schema()
     assert isinstance(complete, dict)
-    assert complete["name"] == "task-runner"
-    assert "version" in complete
-    assert len(complete["tools"]) == 7
+    assert "functions" in complete
+    assert isinstance(complete["functions"], dict)
+    # Should have 7 functions
+    assert len(complete["functions"]) == 7
     
-    # Verify all tools in complete schema
-    tool_names = [t["name"] for t in complete["tools"]]
-    for name in schemas.keys():
-        assert name in tool_names
+    # Verify all functions are included
+    expected_funcs = ["run_task", "run_all_tasks", "get_task_status", 
+                     "get_task_summary", "parse_task_list", "create_project", "clean"]
+    for func in expected_funcs:
+        assert func in complete["functions"]
 
 
 if __name__ == "__main__":

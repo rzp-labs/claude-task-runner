@@ -42,7 +42,7 @@ def test_handler_response_format():
     )
 
     # Mock the TaskManager
-    with patch("task_runner.mcp.wrapper.TaskManager") as MockTaskManager:
+    with patch("task_runner.core.task_manager.TaskManager") as MockTaskManager:
         # Configure the mock
         mock_manager = MagicMock()
         MockTaskManager.return_value = mock_manager

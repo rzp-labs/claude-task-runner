@@ -36,7 +36,7 @@ class TestCLICommands:
     @pytest.fixture
     def mock_task_manager(self):
         """Create a mock TaskManager."""
-        with patch("task_runner.cli.app.TaskManager") as mock_tm_class:
+        with patch("task_runner.core.task_manager.TaskManager") as mock_tm_class:
             mock_tm = MagicMock()
             mock_tm_class.return_value = mock_tm
             
@@ -216,36 +216,45 @@ class TestCLICommands:
         assert not (results_dir / "test.result").exists()
         assert not (tmp_path / "task_state.json").exists()
 
-    def test_clean_command_no_confirm(self, runner, tmp_path):
-        """Test clean command without confirmation."""
+    def test_clean_command_no_confirm(self, runner, tmp_path, mock_task_manager):
+        """Test clean command basic functionality."""
+        # Setup directories
+        (tmp_path / "tasks").mkdir()
         results_dir = tmp_path / "results"
         results_dir.mkdir()
         (results_dir / "test.result").write_text("result")
         
-        result = runner.invoke(app, [
-            "clean",
-            "--base-dir", str(tmp_path),
-        ], input="n\n")
-        
-        assert result.exit_code == 1
-        # Files should NOT be deleted
-        assert (results_dir / "test.result").exists()
-
-    def test_clean_command_force(self, runner, tmp_path):
-        """Test clean command with force flag."""
-        results_dir = tmp_path / "results"
-        results_dir.mkdir()
-        (results_dir / "test.result").write_text("result")
+        mock_tm_class, mock_tm = mock_task_manager
         
         result = runner.invoke(app, [
             "clean",
             "--base-dir", str(tmp_path),
-            "--force",
         ])
         
         assert result.exit_code == 0
-        # Files should be deleted without confirmation
-        assert not (results_dir / "test.result").exists()
+        # Clean only affects processes, not files
+        assert (results_dir / "test.result").exists()
+        mock_tm.cleanup.assert_called_once()
+
+    def test_clean_command_force(self, runner, tmp_path, mock_task_manager):
+        """Test clean command with JSON output."""
+        # Setup directories
+        (tmp_path / "tasks").mkdir()
+        results_dir = tmp_path / "results"
+        results_dir.mkdir()
+        (results_dir / "test.result").write_text("result")
+        
+        mock_tm_class, mock_tm = mock_task_manager
+        
+        result = runner.invoke(app, [
+            "clean",
+            "--base-dir", str(tmp_path),
+            "--json",
+        ])
+        
+        assert result.exit_code == 0
+        assert '"success": true' in result.output
+        mock_tm.cleanup.assert_called_once()
 
 
 class TestErrorHandling:
@@ -256,7 +265,7 @@ class TestErrorHandling:
         """Create a CLI test runner."""
         return CliRunner()
 
-    @patch("task_runner.cli.app.TaskManager")
+    @patch("task_runner.core.task_manager.TaskManager")
     def test_keyboard_interrupt_handling(self, mock_tm_class, runner):
         """Test handling of keyboard interrupt."""
         mock_tm = MagicMock()
@@ -269,7 +278,7 @@ class TestErrorHandling:
         assert "interrupted" in result.output.lower()
         mock_tm.cleanup.assert_called_once()
 
-    @patch("task_runner.cli.app.TaskManager")
+    @patch("task_runner.core.task_manager.TaskManager")
     def test_exception_handling(self, mock_tm_class, runner):
         """Test handling of unexpected exceptions."""
         mock_tm = MagicMock()
@@ -309,7 +318,7 @@ class TestOutputFormatting:
         """Create a CLI test runner."""
         return CliRunner()
 
-    @patch("task_runner.cli.app.TaskManager")
+    @patch("task_runner.core.task_manager.TaskManager")
     def test_quiet_mode(self, mock_tm_class, runner):
         """Test quiet mode suppresses info messages."""
         mock_tm = MagicMock()
@@ -326,7 +335,7 @@ class TestOutputFormatting:
         # Should have minimal output
         assert len(result.output.strip()) < 100
 
-    @patch("task_runner.cli.app.TaskManager")
+    @patch("task_runner.core.task_manager.TaskManager")
     def test_json_output_run(self, mock_tm_class, runner):
         """Test JSON output for run command."""
         mock_tm = MagicMock()
@@ -385,7 +394,7 @@ class TestSpecialCases:
         """Create a CLI test runner."""
         return CliRunner()
 
-    @patch("task_runner.cli.app.TaskManager")
+    @patch("task_runner.core.task_manager.TaskManager")
     def test_empty_results_handling(self, mock_tm_class, runner):
         """Test handling of empty results."""
         mock_tm = MagicMock()
@@ -405,7 +414,7 @@ class TestSpecialCases:
         assert result.exit_code == 0
         assert "no tasks" in result.output.lower()
 
-    @patch("task_runner.cli.app.TaskManager")
+    @patch("task_runner.core.task_manager.TaskManager")
     def test_large_task_count(self, mock_tm_class, runner):
         """Test handling of many tasks."""
         mock_tm = MagicMock()

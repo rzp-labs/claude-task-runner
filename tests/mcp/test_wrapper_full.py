@@ -41,7 +41,7 @@ class TestWrapperFunctions:
         result = format_response(True)
         assert result == {"success": True}
     
-    @patch("task_runner.mcp.wrapper.TaskManager")
+    @patch("task_runner.core.task_manager.TaskManager")
     def test_all_handlers(self, mock_tm_class, temp_project):
         """Test all handler functions."""
         mock_tm = Mock()
@@ -90,7 +90,7 @@ class TestWrapperFunctions:
     
     def test_error_handling(self):
         """Test error handling in handlers."""
-        with patch("task_runner.mcp.wrapper.TaskManager") as mock_tm_class:
+        with patch("task_runner.core.task_manager.TaskManager") as mock_tm_class:
             mock_tm_class.side_effect = Exception("Test error")
             
             request = {"params": {"base_dir": "/invalid"}}

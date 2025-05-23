@@ -41,7 +41,7 @@ class TestMCPModules:
         assert len(complete["tools"]) == 7
         assert complete["name"] == "task-runner"
     
-    @patch("task_runner.mcp.wrapper.TaskManager")
+    @patch("task_runner.core.task_manager.TaskManager")
     def test_wrapper_handlers(self, mock_tm_class):
         """Test all wrapper handler functions."""
         from task_runner.mcp.wrapper import (
