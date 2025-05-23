@@ -80,6 +80,12 @@ wheels/
 .claude
 
 
+# Code quality tools
+.codacy/
+.codacy.yml
+.coverage
+.sonarlint/
+
 # Logs and databases
 *.log
 *.sqlite
