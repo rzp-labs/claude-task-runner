@@ -19,6 +19,7 @@ wheels/
 *.egg-info/
 .installed.cfg
 *.egg
+MANIFEST
 
 # Virtual Environments
 .env
@@ -28,33 +29,16 @@ venv/
 ENV/
 env.bak/
 venv.bak/
+
+# Project specific
 archive/
-examples
-logs
-scripts
-archive
-debug_project
-screenshots
-
-
-# Distribution / packaging
-.Python
-env/
-build/
-develop-eggs/
-dist/
-downloads/
-eggs/
-.eggs/
-lib/
-lib64/
-parts/
-sdist/
-var/
-wheels/
-*.egg-info/
-.installed.cfg
-*.egg
+examples/
+logs/
+scripts/
+debug_project/
+screenshots/
+results/
+task_state.json
 
 # API Keys and Secrets
 **/vertex_ai_service_account.json
@@ -63,7 +47,6 @@ wheels/
 **/*password*
 **/*.pem
 **/*.key
-.env
 **/.env
 **/.env.*
 **/*.env
@@ -78,13 +61,17 @@ wheels/
 **/.claude/settings.local.json
 **/.mcp.json
 .claude
-
+mcp_server.log
 
 # Code quality tools
 .codacy/
 .codacy.yml
 .coverage
 .sonarlint/
+.flake8
+.pytest_cache/
+.mypy_cache/
+.ruff_cache/
 
 # Logs and databases
 *.log
@@ -107,15 +94,30 @@ Thumbs.db
 *.swo
 *~
 
-# Screenshots and images (optional, uncomment if needed)
-# screenshots/*.jpg
-# screenshots/*.png
-# sample_images/*.jpg
-# sample_images/*.png
-
-#Ignore windsurf AI rules
+# AI Tools
 .windsurfrules
-
-# YoYo AI version control directory
+.windsurfrules.md
 .yoyo/
-mcp_server.log
+.qodo/
+
+# Testing
+htmlcov/
+.tox/
+.nox/
+.coverage.*
+.cache
+nosetests.xml
+coverage.xml
+*.cover
+*.py,cover
+.hypothesis/
+
+# Jupyter Notebook
+.ipynb_checkpoints
+
+# pyenv
+.python-version
+
+# Installer logs
+pip-log.txt
+pip-delete-this-directory.txt
