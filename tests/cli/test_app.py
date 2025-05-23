@@ -36,11 +36,7 @@ class TestCLICommands:
     @pytest.fixture
     def mock_task_manager(self):
         """Create a mock TaskManager."""
-        # We need to reload the module to make the patch work
-        import importlib
-        import task_runner.cli.app as app_module
-        
-        with patch.object(app_module, "TaskManager") as mock_tm_class:
+        with patch("task_runner.cli.app.TaskManager") as mock_tm_class:
             mock_tm = MagicMock()
             mock_tm_class.return_value = mock_tm
             

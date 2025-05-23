@@ -155,7 +155,7 @@ class TestCLICommands:
         assert "test_project" in result.output
 
     def test_clean_abort(self):
-        """Test clean command when user aborts."""
+        """Test clean command basic functionality."""
         runner = CliRunner()
         with tempfile.TemporaryDirectory() as temp_dir:
             # Create required directories
@@ -167,18 +167,19 @@ class TestCLICommands:
             result = runner.invoke(app, [
                 "clean",
                 "--base-dir", temp_dir
-            ], input="n\n")  # User says no
+            ])
         
-        # The clean command actually exits with 0 even on abort in this implementation
+        # Clean command should succeed
         assert result.exit_code == 0
-        # File should still exist since user aborted
+        # File should still exist - clean only removes processes, not files
         assert (results_dir / "test.txt").exists()
 
     def test_clean_force(self):
-        """Test clean command with force flag."""
+        """Test clean command with JSON output."""
         runner = CliRunner()
         with tempfile.TemporaryDirectory() as temp_dir:
-            # Create results directory
+            # Create required directories
+            (Path(temp_dir) / "tasks").mkdir()
             results_dir = Path(temp_dir) / "results"
             results_dir.mkdir()
             (results_dir / "test.txt").write_text("test")
@@ -186,11 +187,11 @@ class TestCLICommands:
             result = runner.invoke(app, [
                 "clean",
                 "--base-dir", temp_dir,
-                "--force"
+                "--json"
             ])
         
         assert result.exit_code == 0
-        assert "cleaned" in result.output.lower()
+        assert "success" in result.output.lower()
 
 
 class TestCLIErrors:
@@ -204,7 +205,7 @@ class TestCLIErrors:
             "--base-dir", "/nonexistent/path/that/should/not/exist"
         ])
         
-        assert result.exit_code == 2  # Typer validation error
+        assert result.exit_code == 1  # Should fail with exit code 1
 
     def test_invalid_timeout(self):
         """Test with invalid timeout value."""

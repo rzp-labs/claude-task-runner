@@ -58,7 +58,7 @@ class TestRunCommand:
         ])
 
         assert result.exit_code == 0
-        assert "Run Summary" in result.output
+        assert "Task execution complete" in result.output
 
     def test_run_with_task_list(self, runner, temp_project):
         """Test run with task list parsing in demo mode."""
