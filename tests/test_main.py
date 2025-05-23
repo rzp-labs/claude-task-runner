@@ -28,17 +28,16 @@ def test_main_entry_point():
 
 def test_main_calls_app():
     """Test that main module calls the app when executed."""
-    with patch("task_runner.cli.app") as mock_app_module:
-        # Create a mock app object
-        mock_app = Mock()
-        mock_app_module.app = mock_app
-        
+    # The __main__ module imports app from task_runner.cli.app
+    # We need to mock it before the import happens
+    with patch("task_runner.cli.app.app") as mock_app:
         # Execute __main__ by running it as a module
         with patch.object(sys, 'argv', ['task_runner']):
             # Import and thus execute the __main__ module
             import importlib
+            if 'task_runner.__main__' in sys.modules:
+                del sys.modules['task_runner.__main__']
             import task_runner.__main__
-            importlib.reload(task_runner.__main__)
             
             # Verify app was called
             mock_app.assert_called_once()

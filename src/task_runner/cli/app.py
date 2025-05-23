@@ -65,10 +65,17 @@ def run(
         help="Base directory for tasks and results",
         callback=validate_base_dir,
     ),
-    claude_path: Optional[str] = typer.Option(None, help="Path to Claude executable"),
-    resume: bool = typer.Option(False, "--resume", help="Resume from previously interrupted tasks"),
+    claude_path: Optional[str] = typer.Option(
+        None, help="Path to Claude executable"
+    ),
+    resume: bool = typer.Option(
+        False, "--resume", help="Resume from previously interrupted tasks"
+    ),
     json_output: bool = typer.Option(
-        False, "--json", help="Output results as JSON", callback=validate_json_output
+        False,
+        "--json",
+        help="Output results as JSON",
+        callback=validate_json_output,
     ),
     timeout: int = typer.Option(
         300,
@@ -81,7 +88,9 @@ def run(
     ),
     # Removed no_auth flag as it's not supported in the current Claude version
     debug_claude: bool = typer.Option(
-        False, "--debug-claude", help="Debug Claude launch performance with detailed timing logs"
+        False,
+        "--debug-claude",
+        help="Debug Claude launch performance with detailed timing logs",
     ),
     no_pool: bool = typer.Option(
         False,
@@ -95,7 +104,9 @@ def run(
         callback=validate_pool_size,
     ),
     reuse_context: bool = typer.Option(
-        True, "--reuse-context", help="Reuse Claude processes with /clear command between tasks"
+        True,
+        "--reuse-context",
+        help="Reuse Claude processes with /clear command between tasks",
     ),
     no_streaming: bool = typer.Option(
         False,
@@ -133,7 +144,9 @@ def run(
     if debug_claude:
         # TODO: Add debug support when implemented in TaskManager
         # manager.debug_claude_launch = True
-        logger.info("Debug mode enabled - detailed timing logs will be generated")
+        logger.info(
+            "Debug mode enabled - detailed timing logs will be generated"
+        )
 
     # Set process pooling settings
     # TODO: Add process pooling support when implemented in TaskManager
@@ -144,7 +157,9 @@ def run(
 
     # Log the process pooling configuration
     if not no_pool:
-        logger.info(f"Using process pool with size {pool_size}, context reuse: {reuse_context}")
+        logger.info(
+            f"Using process pool with size {pool_size}, context reuse: {reuse_context}"
+        )
     else:
         logger.info("Process pooling disabled")
 
@@ -153,7 +168,9 @@ def run(
         if task_list and not resume:
             if not task_list.exists():
                 if json_output:
-                    print_json({"error": f"Task list file not found: {task_list}"})
+                    print_json(
+                        {"error": f"Task list file not found: {task_list}"}
+                    )
                 else:
                     print_error(f"Task list file not found: {task_list}")
                 raise typer.Exit(1)
@@ -185,7 +202,9 @@ def run(
 
             # Show initial dashboard
             components = create_dashboard(
-                manager.task_state, manager.current_task, manager.current_task_start_time
+                manager.task_state,
+                manager.current_task,
+                manager.current_task_start_time,
             )
 
             # Display each component
@@ -197,9 +216,9 @@ def run(
                 task_name = task_file.stem
 
                 # Skip already processed tasks
-                if task_name in manager.task_state and manager.task_state[task_name].get(
-                    "status"
-                ) in ["completed", "failed", "timeout"]:
+                if task_name in manager.task_state and manager.task_state[
+                    task_name
+                ].get("status") in ["completed", "failed", "timeout"]:
                     continue
 
                 # Always show a clear separator between tasks
@@ -228,7 +247,9 @@ def run(
                 if no_table_repeat:
                     # Just print a simple status update
                     if success:
-                        print_success(f"Task {task_name} completed successfully")
+                        print_success(
+                            f"Task {task_name} completed successfully"
+                        )
                     else:
                         print_error(f"Task {task_name} failed")
 
@@ -240,12 +261,16 @@ def run(
                     completed = summary["completed"]
                     total = summary["total"]
                     percentage = int(completed / total * 100)
-                    print_info(f"Progress: {completed}/{total} tasks completed ({percentage}%)")
+                    print_info(
+                        f"Progress: {completed}/{total} tasks completed ({percentage}%)"
+                    )
                 else:
                     # Show updated status after task completes with full dashboard
                     print("\n")
                     components = create_dashboard(
-                        manager.task_state, manager.current_task, manager.current_task_start_time
+                        manager.task_state,
+                        manager.current_task,
+                        manager.current_task_start_time,
                     )
 
                     # Display each component
@@ -289,7 +314,10 @@ def status(
         callback=validate_base_dir,
     ),
     json_output: bool = typer.Option(
-        False, "--json", help="Output results as JSON", callback=validate_json_output
+        False,
+        "--json",
+        help="Output results as JSON",
+        callback=validate_json_output,
     ),
 ) -> None:
     """Show status of all tasks"""
@@ -325,7 +353,10 @@ def create(
         callback=validate_base_dir,
     ),
     json_output: bool = typer.Option(
-        False, "--json", help="Output results as JSON", callback=validate_json_output
+        False,
+        "--json",
+        help="Output results as JSON",
+        callback=validate_json_output,
     ),
 ) -> None:
     """Create a new project from a task list"""
@@ -339,7 +370,9 @@ def create(
         if task_list:
             if not task_list.exists():
                 if json_output:
-                    print_json({"error": f"Task list file not found: {task_list}"})
+                    print_json(
+                        {"error": f"Task list file not found: {task_list}"}
+                    )
                 else:
                     print_error(f"Task list file not found: {task_list}")
                 raise typer.Exit(1)
@@ -395,7 +428,10 @@ def clean(
         callback=validate_base_dir,
     ),
     json_output: bool = typer.Option(
-        False, "--json", help="Output results as JSON", callback=validate_json_output
+        False,
+        "--json",
+        help="Output results as JSON",
+        callback=validate_json_output,
     ),
 ) -> None:
     """Clean up any running processes"""
