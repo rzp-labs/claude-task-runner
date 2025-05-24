@@ -216,7 +216,7 @@ class TestParseTaskListHandler:
         mock_tm = Mock()
         mock_tm_class.return_value = mock_tm
         mock_tm.parse_task_list.return_value = [
-            Path("/tmp/tasks/001_task1.md"),
+            Path(tmp_file.name.replace("tmp", "tasks/001_task1.md")),
             Path("/tmp/tasks/002_task2.md")
         ]
 
