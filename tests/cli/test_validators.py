@@ -72,7 +72,7 @@ class TestValidators:
     def test_validate_base_dir_regular_path(self):
         """Test base directory validation with regular path."""
         # Regular path should pass through unchanged
-        test_path = Path("/tmp/test")
+        test_path = tempfile.NamedTemporaryFile(delete=False).name
         result = validate_base_dir(test_path)
         assert result == test_path
 
