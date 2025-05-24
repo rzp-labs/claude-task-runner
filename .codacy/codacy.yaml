@@ -11,3 +11,16 @@ tools:
     - dartanalyzer@3.7.2
     - semgrep@1.78.0
     - lizard@1.17.19
+
+exclude_paths:
+    - ".venv/**"
+    - "venv/**"
+    - "build/**"
+    - "dist/**"
+    - "*.egg-info/**"
+    - "__pycache__/**"
+    - ".pytest_cache/**"
+    - ".mypy_cache/**"
+    - ".ruff_cache/**"
+    - "htmlcov/**"
+    - ".coverage/**"
