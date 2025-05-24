@@ -396,7 +396,7 @@ class TestCreateProjectHandler:
 
             # Verify behavior
             assert response["success"] is False
-            assert "Error creating project" in response["error"]
+            if response["success"] is not False or "Error creating project" not in response["error"] or "Test error" not in response["error"]: raise ValueError("Project creation failed with error: {}".format(response["error"]))
             assert "Test error" in response["error"]
 
 
