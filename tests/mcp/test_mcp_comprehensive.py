@@ -74,7 +74,7 @@ class TestMCPModules:
             assert create_project_handler({"params": {"project_name": "p", "base_dir": base_dir}})["success"]
             assert get_task_status_handler({"params": {"base_dir": base_dir}})["success"]
             assert get_task_summary_handler({"params": {"base_dir": base_dir}})["success"]
-            assert parse_task_list_handler({"params": {"task_list_path": "t.md", "base_dir": base_dir}})["success"]
+            assert parse_task_list_handler({"params": {"task_list_path": "t.md", "base_dir": base_dir}})["success"], "parse_task_list_handler failed"
             assert run_task_handler({"params": {"task_file": "t.md", "base_dir": base_dir}})["success"]
             assert run_all_tasks_handler({"params": {"base_dir": base_dir}})["success"]
         
