@@ -357,7 +357,7 @@ def create_dashboard(
 
 
 if __name__ == "__main__":
-    """Validate formatters"""
+    # Validate formatters
     import sys
     import time
 

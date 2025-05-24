@@ -30,6 +30,9 @@ ENV/
 env.bak/
 venv.bak/
 
+# Package managers
+uv.lock
+
 # Project specific
 archive/
 examples/
@@ -64,13 +67,12 @@ task_state.json
 mcp_server.log
 
 # Code quality tools
-.codacy/
-.codacy.yml
 .coverage
 .sonarlint/
 .pytest_cache/
 .mypy_cache/
 .ruff_cache/
+# Keep Codacy config files - they define our quality standards
 
 # Logs and databases
 *.log

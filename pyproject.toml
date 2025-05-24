@@ -1,83 +1,70 @@
-[build-system]
-requires = ["setuptools>=42", "wheel"]
-build-backend = "setuptools.build_meta"
-
-[project]
-name = "task_runner"
+[tool.poetry]
+name = "task-runner"
 version = "1.0.0"
 description = "Claude Task Runner - A tool for managing context isolation and focused task execution with Claude"
-authors = [
-    {name = "Graham Anderson", email = "graham@grahama.co"}
-]
+authors = ["Graham Anderson <graham@grahama.co>"]
 readme = "README.md"
-requires-python = ">=3.10.11"
-license = {text = "MIT"}
-dependencies = [
-    "mcp",
-    "pillow",
-    "loguru",
-    "mss",
-    "rich",
-    "screeninfo>=0.8.1",
-    "litellm>=1.68.2",
-    "json-repair>=0.44.1",
-    "redis>=6.0.0",
-    "python-dotenv>=1.1.0",
-    # "pexpect>=4.8.0", # For interactive process management
-    # API centric
-    "google-auth>=2.39.0",
-    "google-auth-oauthlib>=1.2.2",
-    "typer>=0.15.3",
-    "python-arango>=8.1.6",
-    "fastmcp>=2.3.3",
+license = "MIT"
+homepage = "https://github.com/rzp-labs/claude-task-runner"
+repository = "https://github.com/rzp-labs/claude-task-runner"
+documentation = "https://github.com/rzp-labs/claude-task-runner"
+keywords = ["claude", "ai", "task-runner", "mcp", "automation"]
+classifiers = [
+    "Development Status :: 4 - Beta",
+    "Intended Audience :: Developers",
+    "License :: OSI Approved :: MIT License",
+    "Programming Language :: Python :: 3",
+    "Programming Language :: Python :: 3.10",
+    "Programming Language :: Python :: 3.11",
+    "Programming Language :: Python :: 3.12",
 ]
+packages = [{include = "task_runner", from = "src"}]
 
-[project.scripts]
+[tool.poetry.dependencies]
+python = "^3.10"
+mcp = "^1.0.0"
+pillow = "^10.0.0"
+loguru = "^0.7.0"
+mss = "^9.0.0"
+rich = "^13.0.0"
+screeninfo = "^0.8.1"
+litellm = "^1.68.2"
+json-repair = "^0.44.1"
+redis = "^6.0.0"
+python-dotenv = "^1.0.0"
+google-auth = "^2.39.0"
+google-auth-oauthlib = "^1.2.2"
+typer = "^0.15.3"
+python-arango = "^8.1.6"
+fastmcp = "^2.3.3"
+
+[tool.poetry.group.dev.dependencies]
+pytest = "^7.4"
+pytest-cov = "^4.1.0"
+pytest-xdist = "^3.5.0"
+pytest-timeout = "^2.2.0"
+black = "^24.3.0"
+ruff = "^0.5.3"
+mypy = "^1.8.0"
+bandit = "^1.8.3"
+safety = "^3.5.1"
+pylint = "^3.3.7"
+pip-audit = "^2.9.0"
+pre-commit = "^4.2.0"
+coverage = {extras = ["toml"], version = "^7.4.0"}
+
+[tool.poetry.scripts]
 task-runner = "task_runner.cli.app:app"
 task-runner-mcp = "task_runner.mcp.server:app"
 
-[project.optional-dependencies]
-dev = [
-    "pytest>=7.0.0",
-    "pytest-cov>=4.0.0",
-    "black>=23.0.0",
-    "isort>=5.0.0",
-    "mypy>=1.0.0",
-    "pylint>=2.17.0",
-    "ruff>=0.1.0",
-]
+[build-system]
+requires = ["poetry-core>=1.0.0"]
+build-backend = "poetry.core.masonry.api"
 
-[project.urls]
-"Homepage" = "https://github.com/rzp-labs/claude-task-runner"
-"Bug Tracker" = "https://github.com/rzp-labs/claude-task-runner/issues"
-
-[tool.setuptools]
-package-dir = {"" = "src"}
-
-[tool.setuptools.packages.find]
-where = ["src"]
-
+# Minimal tool configuration - Guardrails handles most quality checks
 [tool.black]
-line-length = 100
-target-version = ["py38"]
-
-[tool.pytest.ini_options]
-testpaths = ["tests"]
-python_files = "test_*.py"
-python_classes = "Test*"
-python_functions = "test_*"
-pythonpath = ["src"]
-addopts = "--strict-markers --cov=task_runner"
-markers = [
-    "unit: marks tests as unit tests",
-    "integration: marks tests as integration tests",
-    "mcp: marks tests that require MCP infrastructure",
-]
-
-[tool.isort]
-profile = "black"
-line_length = 100
-multi_line_output = 3
+line-length = 80
+target-version = ["py310"]
 
 [tool.mypy]
 python_version = "3.10"
@@ -86,35 +73,185 @@ warn_unused_configs = true
 disallow_untyped_defs = true
 disallow_incomplete_defs = true
 
-[tool.pylint.messages_control]
-# Keep strict rules - only disable genuine conflicts
-disable = [
-    "redefined-outer-name",  # pytest fixtures legitimately redefine names
+[tool.pytest.ini_options]
+testpaths = ["tests"]
+python_files = "test_*.py"
+python_classes = "Test*"
+python_functions = "test_*"
+pythonpath = ["src"]
+addopts = "--strict-markers --cov=task_runner --cov-report=term-missing --cov-report=html --cov-report=xml --cov-fail-under=80"
+markers = [
+    "unit: marks tests as unit tests",
+    "integration: marks tests as integration tests",
+    "mcp: marks tests that require MCP infrastructure",
 ]
 
-[tool.pylint.format]
-max-line-length = 100
+[tool.coverage.run]
+source = ["src/task_runner"]
+branch = true
+omit = [
+    "*/tests/*",
+    "*/__init__.py",
+    "*/conftest.py",
+    "*/test_*.py",
+]
+
+[tool.coverage.report]
+precision = 2
+exclude_lines = [
+    "pragma: no cover",
+    "def __repr__",
+    "if self.debug:",
+    "if __name__ == .__main__.:",
+    "raise AssertionError",
+    "raise NotImplementedError",
+    "if 0:",
+    "if False:",
+    "class .*\\bProtocol\\):",
+    "@(abc\\.)?abstractmethod",
+]
+show_missing = true
+skip_covered = false
+fail_under = 80
+
+[tool.coverage.html]
+directory = "htmlcov"
+
+[tool.coverage.xml]
+output = "coverage.xml"
 
 [tool.ruff]
-line-length = 100
+# Enable automatic fixing
+fix = true
+# Line length to match Black
+line-length = 80
+# Target Python 3.10+
 target-version = "py310"
+# Exclude common directories
 exclude = [
     ".git",
-    "__pycache__",
     ".venv",
-    "venv",
+    "__pycache__",
+    ".pytest_cache",
+    ".mypy_cache",
+    ".ruff_cache",
     "build",
     "dist",
     "*.egg-info",
+    "htmlcov",
+    ".coverage",
 ]
 
 [tool.ruff.lint]
+# Enable comprehensive rule sets
 select = [
-    "E",  # pycodestyle errors
-    "W",  # pycodestyle warnings
-    "F",  # pyflakes
-    "I",  # isort
+    "E",    # pycodestyle errors
+    "W",    # pycodestyle warnings
+    "F",    # pyflakes
+    "I",    # isort
+    "N",    # pep8-naming
+    "D",    # pydocstyle
+    "UP",   # pyupgrade
+    "Q",    # flake8-quotes
+    "B",    # flake8-bugbear
+    "C4",   # flake8-comprehensions
+    "SIM",  # flake8-simplify
+    "TID",  # flake8-tidy-imports
+    "RUF",  # ruff-specific rules
+    "S",    # bandit security checks
+    "PL",   # pylint
+    "PT",   # flake8-pytest-style
+    "RET",  # flake8-return
+    "ARG",  # flake8-unused-arguments
+    "PTH",  # flake8-use-pathlib
+    "TCH",  # flake8-type-checking
 ]
+
+# Ignore specific rules
 ignore = [
-    "E203",  # whitespace before ':' (conflicts with black)
+    "D100",   # Missing docstring in public module
+    "D104",   # Missing docstring in public package
+    "D203",   # 1 blank line required before class docstring
+    "D213",   # Multi-line docstring summary should start at the second line
 ]
+
+# Enable auto-fixing for all rules
+fixable = ["ALL"]
+# Don't remove unused imports automatically (safety)
+unfixable = ["F401", "F841"]
+
+# Per-file ignores
+[tool.ruff.lint.per-file-ignores]
+"__init__.py" = ["F401", "F403", "D104"]
+"tests/**/*" = ["D", "S101", "ARG", "PLR2004"]
+"*/test_*.py" = ["D", "S101", "ARG", "PLR2004"]
+
+[tool.ruff.lint.isort]
+# Import organization for AI projects
+combine-as-imports = true
+force-wrap-aliases = true
+known-first-party = ["src"]
+known-third-party = [
+    "numpy", "pandas", "matplotlib", "seaborn", "sklearn",
+    "torch", "tensorflow", "transformers", "datasets",
+    "fastapi", "pydantic", "sqlalchemy"
+]
+section-order = [
+    "future", "standard-library", "third-party",
+    "first-party", "local-folder"
+]
+
+[tool.ruff.lint.pydocstyle]
+convention = "google"
+
+[tool.ruff.format]
+# Formatting configuration
+quote-style = "double"
+indent-style = "space"
+skip-magic-trailing-comma = false
+line-ending = "auto"
+docstring-code-format = true
+docstring-code-line-length = "dynamic"
+
+[tool.ruff.lint.flake8-quotes]
+# Consistent quote style
+docstring-quotes = "double"
+inline-quotes = "double"
+
+[tool.ruff.lint.flake8-tidy-imports]
+# Ban relative imports except for local modules
+ban-relative-imports = "parents"
+
+[tool.ruff.lint.mccabe]
+# Complexity threshold for AI code
+max-complexity = 12
+
+[tool.ruff.lint.pep8-naming]
+# Naming conventions
+classmethod-decorators = ["classmethod", "pydantic.validator"]
+
+[tool.ruff.lint.pylint]
+# Pylint-style checks
+max-args = 8
+max-branches = 15
+max-returns = 8
+max-statements = 60
+
+[tool.pylint]
+ignore-paths = ["^.venv/.*$", "^venv/.*$", "^.*/site-packages/.*$"]
+ignore = [".venv", "venv", "build", "dist", "*.egg-info"]
+
+[tool.pylint.messages_control]
+disable = [
+    "too-few-public-methods",
+]
+
+[tool.pylint.format]
+max-line-length = 80
+
+[tool.bandit]
+exclude_dirs = ["tests", "venv", ".venv"]
+skips = ["B101"]  # Skip assert_used test
+
+[tool.pre-commit]
+# This will be in .pre-commit-config.yaml, but we can reference it here

@@ -6,6 +6,6 @@ solving the critical challenge of context length limitations and task focus when
 with Claude on complex, multi-step projects.
 """
 
-from task_runner.cli.app import app as app  # Explicit re-export
+from task_runner.cli.app import app  # Explicit re-export
 
 __version__ = "0.1.0"

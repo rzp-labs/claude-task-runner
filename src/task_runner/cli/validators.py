@@ -108,7 +108,7 @@ def validate_json_output(value: bool) -> bool:
 
 
 if __name__ == "__main__":
-    """Validate validators"""
+    # Validate validators
     import sys
 
     # List to track all validation failures

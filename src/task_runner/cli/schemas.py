@@ -129,12 +129,12 @@ def generate_cli_schema() -> Dict[str, Any]:
                     "no_table_repeat": {
                         "type": "boolean",
                         "default": False,
-                        "help": "Display table only once, no repeat after each task (better with streaming)",
+                        "help": "Display table once, no repeat after each task (with streaming)",
                     },
                     "dangerous": {
                         "type": "boolean",
                         "default": False,
-                        "help": "Use --dangerously-skip-permissions to bypass Claude permission checks",
+                        "help": "Use --dangerously-skip-permissions to bypass permission checks",
                     },
                 },
             },
